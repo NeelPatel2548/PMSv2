@@ -1,4 +1,6 @@
 const { validationResult } = require('express-validator');
+const fs = require('fs');
+const path = require('path');
 const Student = require('../models/Student');
 const User = require('../models/User');
 const Job = require('../models/Job');
@@ -35,7 +37,8 @@ exports.updateProfile = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return error(res, 'Validation failed', 400, errors.array());
+      const msgs = errors.array().map(e => e.msg).join(', ');
+      return error(res, `Validation failed: ${msgs}`, 400, errors.array());
     }
 
     const student = await Student.findOne({ user: req.user._id });
@@ -47,7 +50,7 @@ exports.updateProfile = async (req, res) => {
     const personalFields = ['name', 'phone', 'address', 'gender', 'dob',
                      'linkedin', 'github', 'skills',
                      'projects', 'certifications', 'internshipExperience'];
-    const academicFields = ['enrollmentNo', 'branch', 'passingYear',
+    const academicFields = ['enrollmentNo', 'branch', 'passingYear', 'currentSemester',
                             'cgpa', 'tenthPercentage', 'twelfthPercentage', 'activeBacklogs'];
 
     // Check if request contains academic fields
@@ -57,7 +60,7 @@ exports.updateProfile = async (req, res) => {
     if (hasAcademicUpdates && student.academicVerified) {
       return error(res, 'Academic records are verified and locked. Contact admin to make changes.', 403);
     }
-
+  
     const updates = {};
 
     // Personal fields (name handled separately on User)
@@ -73,10 +76,57 @@ exports.updateProfile = async (req, res) => {
       });
     }
 
+    // === Feature 1: Server-side validations ===
+    const { phone, dob, address, gender } = updates;
+    if (phone !== undefined && phone && !/^[0-9]{10}$/.test(phone)) {
+      return error(res, 'Phone number must be exactly 10 digits.', 400);
+    }
+    if (gender !== undefined && gender && !['male', 'female', 'other'].includes(gender)) {
+      return error(res, 'Gender must be male, female, or other.', 400);
+    }
+    if (dob !== undefined && dob) {
+      const dobDate = new Date(dob);
+      if (isNaN(dobDate.getTime()) || dobDate > new Date()) {
+        return error(res, 'Date of birth cannot be in the future.', 400);
+      }
+    }
+    if (address !== undefined && address && address.length < 5) {
+      return error(res, 'Address must be at least 5 characters.', 400);
+    }
+    // Enrollment number validation
+    if (updates.enrollmentNo !== undefined && updates.enrollmentNo) {
+      const enroll = String(updates.enrollmentNo);
+      if (!/^\d{13}$/.test(enroll)) {
+        return error(res, 'Enrollment number must be exactly 13 digits.', 400);
+      }
+    }
+    // Academic field validations
+    if (updates.cgpa !== undefined && updates.cgpa !== '' && (updates.cgpa < 0 || updates.cgpa > 10)) {
+      return error(res, 'CGPA must be between 0 and 10.', 400);
+    }
+    if (updates.tenthPercentage !== undefined && updates.tenthPercentage !== '' && (updates.tenthPercentage < 0 || updates.tenthPercentage > 100)) {
+      return error(res, '10th percentage must be between 0 and 100.', 400);
+    }
+    if (updates.twelfthPercentage !== undefined && updates.twelfthPercentage !== '' && (updates.twelfthPercentage < 0 || updates.twelfthPercentage > 100)) {
+      return error(res, '12th percentage must be between 0 and 100.', 400);
+    }
+    if (updates.passingYear !== undefined && updates.passingYear !== '' && (updates.passingYear < 2020 || updates.passingYear > 2030)) {
+      return error(res, 'Passing year must be between 2020 and 2030.', 400);
+    }
+    if (updates.currentSemester !== undefined && updates.currentSemester !== '' && (updates.currentSemester < 1 || updates.currentSemester > 8)) {
+      return error(res, 'Current semester must be between 1 and 8.', 400);
+    }
+
+    // Sanitize skills: only allow predefined values
+    if (updates.skills) {
+      const { SKILLS_LIST } = require('../utils/constants');
+      updates.skills = updates.skills.filter(s => SKILLS_LIST.includes(s));
+    }
+
     const updatedStudent = await Student.findOneAndUpdate(
       { user: req.user._id },
       updates,
-      { returnDocument: 'after', runValidators: true }
+      { returnDocument: 'after', runValidators: false }
     ).populate('user', 'name email profileImageUrl profileCompleted');
 
     // If name was sent, update on User model too
@@ -95,10 +145,19 @@ exports.updateProfile = async (req, res) => {
       .populate('user', 'name email profileImageUrl profileCompleted')
       .populate('academicVerifiedBy', 'name');
 
-    return success(res, final, 'Profile updated');
+    return success(res, final, 'Profile updated successfully');
   } catch (err) {
     console.error('Update profile error:', err);
-    return error(res, 'Failed to update profile', 500);
+    if (err.code === 11000) {
+      const field = Object.keys(err.keyPattern)[0];
+      const fieldName = field === 'enrollmentNo' ? 'Enrollment number' : field;
+      return error(res, `${fieldName} is already registered to another student.`, 400);
+    }
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map(e => e.message).join(', ');
+      return error(res, `Validation failed: ${messages}`, 400);
+    }
+    return error(res, err.message || 'Failed to update profile', 500);
   }
 };
 
@@ -111,18 +170,26 @@ exports.uploadResume = async (req, res) => {
       return error(res, 'No file uploaded', 400);
     }
 
+    // Bug Fix 5: Delete old resume file from disk before saving new one
+    const student = await Student.findOne({ user: req.user._id });
+    if (!student) {
+      return error(res, 'Student profile not found', 404);
+    }
+    if (student.resumeUrl) {
+      const oldFilePath = path.join(__dirname, '..', '..', student.resumeUrl);
+      if (fs.existsSync(oldFilePath)) {
+        try { fs.unlinkSync(oldFilePath); } catch (e) { console.log('Could not delete old resume:', e); }
+      }
+    }
+
     // Validate via magic bytes and save
     const resumeUrl = await validateAndSaveFile(req.file.buffer, req.user.id);
 
-    const student = await Student.findOneAndUpdate(
+    const updatedStudent = await Student.findOneAndUpdate(
       { user: req.user._id },
       { resumeUrl },
       { returnDocument: 'after', runValidators: true }
     );
-
-    if (!student) {
-      return error(res, 'Student profile not found', 404);
-    }
 
     return success(res, { resumeUrl }, 'Resume uploaded successfully');
   } catch (err) {
@@ -178,7 +245,37 @@ exports.getEligibleJobs = async (req, res) => {
     const appliedJobIds = await Application.find({ student: student._id }).distinct('job');
     const filteredJobs = jobs.filter(j => !appliedJobIds.some(id => id.equals(j._id)));
 
-    return success(res, filteredJobs, 'Eligible jobs fetched');
+    // Feature 3: Skill match scoring
+    const studentSkills = student.skills || [];
+    const jobsWithScore = filteredJobs.map(job => {
+      const jobSkills = job.requiredSkills || [];
+      if (jobSkills.length === 0) {
+        return { ...job.toObject(), matchScore: 0, matchedSkills: [], unmatchedSkills: [], matchLevel: 'none' };
+      }
+      const matched = jobSkills.filter(skill => studentSkills.includes(skill));
+      const matchScore = Math.round((matched.length / jobSkills.length) * 100);
+      let matchLevel = 'none';
+      if (matched.length >= 3) matchLevel = 'strong';
+      else if (matched.length >= 1) matchLevel = 'partial';
+      return {
+        ...job.toObject(),
+        matchScore,
+        matchedSkills: matched,
+        unmatchedSkills: jobSkills.filter(s => !studentSkills.includes(s)),
+        matchLevel
+      };
+    });
+
+    // Sort: strong first, then partial, then none; within same level by score desc
+    const levelOrder = { strong: 3, partial: 2, none: 1 };
+    jobsWithScore.sort((a, b) => {
+      if (levelOrder[b.matchLevel] !== levelOrder[a.matchLevel]) {
+        return levelOrder[b.matchLevel] - levelOrder[a.matchLevel];
+      }
+      return b.matchScore - a.matchScore;
+    });
+
+    return success(res, jobsWithScore, 'Eligible jobs fetched');
   } catch (err) {
     console.error('Get eligible jobs error:', err);
     return error(res, 'Failed to fetch jobs', 500);
@@ -190,7 +287,7 @@ exports.getEligibleJobs = async (req, res) => {
 // @access  Private (student)
 exports.applyToJob = async (req, res) => {
   try {
-    const student = await Student.findOne({ user: req.user._id });
+    const student = await Student.findOne({ user: req.user._id }).populate('user', 'name');
     if (!student) {
       return error(res, 'Student profile not found', 404);
     }
@@ -198,6 +295,39 @@ exports.applyToJob = async (req, res) => {
     // Bug Fix 1: Block placed students from applying to more jobs
     if (student.placementStatus === 'placed') {
       return error(res, 'You are already placed and cannot apply to more drives.', 400);
+    }
+
+    // Feature 2: Profile completion gate
+    const missingPersonal = [];
+    if (!student.user?.name) missingPersonal.push('name');
+    if (!student.phone) missingPersonal.push('phone');
+    if (!student.gender) missingPersonal.push('gender');
+    if (!student.dob) missingPersonal.push('date of birth');
+    if (!student.address) missingPersonal.push('address');
+
+    if (missingPersonal.length > 0) {
+      return error(res, `Please complete your personal information before applying. Missing: ${missingPersonal.join(', ')}`, 400);
+    }
+
+    const missingAcademic = [];
+    if (!student.enrollmentNo) missingAcademic.push('enrollment number');
+    if (!student.branch) missingAcademic.push('branch');
+    if (!student.cgpa && student.cgpa !== 0) missingAcademic.push('CGPA');
+    if (!student.tenthPercentage) missingAcademic.push('10th percentage');
+    if (!student.twelfthPercentage) missingAcademic.push('12th percentage');
+    if (!student.passingYear) missingAcademic.push('passing year');
+    if (!student.currentSemester) missingAcademic.push('current semester');
+
+    if (missingAcademic.length > 0) {
+      return error(res, `Please complete your academic records before applying. Missing: ${missingAcademic.join(', ')}`, 400);
+    }
+
+    if (!student.skills || student.skills.length === 0) {
+      return error(res, 'Please add at least one skill to your profile before applying.', 400);
+    }
+
+    if (!student.academicVerified) {
+      return error(res, 'Your academic records must be verified by the administration before you can apply to jobs. Please contact your placement officer.', 400);
     }
 
     const job = await Job.findById(req.params.jobId);
@@ -371,11 +501,52 @@ exports.getDashboard = async (req, res) => {
 
     const offers = applications.filter(a => a.status === 'selected');
 
+    // Profile completion score
+    const user = student.user;
+    let personalScore = 0;
+    if (user?.name) personalScore += 5;
+    if (student.phone) personalScore += 5;
+    if (student.gender) personalScore += 5;
+    if (student.dob) personalScore += 5;
+    if (student.address) personalScore += 5;
+
+    let academicScore = 0;
+    if (student.enrollmentNo) academicScore += 5;
+    if (student.branch) academicScore += 5;
+    if (student.cgpa !== undefined && student.cgpa !== null) academicScore += 5;
+    if (student.tenthPercentage) academicScore += 5;
+    if (student.twelfthPercentage) academicScore += 5;
+    if (student.passingYear) academicScore += 5;
+    if (student.currentSemester) academicScore += 5;
+
+    let skillsScore = 0;
+    const skillCount = student.skills?.length || 0;
+    if (skillCount >= 5) skillsScore = 15;
+    else if (skillCount >= 3) skillsScore = 10;
+    else if (skillCount >= 1) skillsScore = 5;
+
+    const verifiedScore = student.academicVerified ? 15 : 0;
+
+    let extrasScore = 0;
+    if (student.resumeUrl) extrasScore += 4;
+    if (student.linkedin) extrasScore += 3;
+    if (student.github) extrasScore += 3;
+
+    const completionScore = personalScore + academicScore + skillsScore + verifiedScore + extrasScore;
+
     return success(res, {
       student,
       stats,
       upcomingInterviews: interviews,
-      offers
+      offers,
+      completionScore,
+      completionBreakdown: {
+        personal: { score: personalScore, max: 25 },
+        academic: { score: academicScore, max: 35 },
+        skills: { score: skillsScore, max: 15 },
+        verified: { score: verifiedScore, max: 15 },
+        extras: { score: extrasScore, max: 10 },
+      }
     }, 'Dashboard fetched');
   } catch (err) {
     console.error('Get dashboard error:', err);

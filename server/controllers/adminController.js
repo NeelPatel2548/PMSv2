@@ -1,4 +1,6 @@
 const { validationResult } = require('express-validator');
+const fs = require('fs');
+const path = require('path');
 const User = require('../models/User');
 const Student = require('../models/Student');
 const Company = require('../models/Company');
@@ -68,15 +70,14 @@ exports.getDashboard = async (req, res) => {
 exports.getStudents = async (req, res) => {
   try {
     const { branch, passingYear, placementStatus, search } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
     const filter = {};
 
     if (branch) filter.branch = branch;
     if (passingYear) filter.passingYear = parseInt(passingYear);
     if (placementStatus) filter.placementStatus = placementStatus;
-
-    let students = Student.find(filter)
-      .populate('user', 'name email isActive isVerified profileImageUrl')
-      .populate('placedIn', 'name');
 
     if (search) {
       const users = await User.find({
@@ -86,13 +87,28 @@ exports.getStudents = async (req, res) => {
           { email: { $regex: search, $options: 'i' } }
         ]
       }).select('_id');
-      const userIds = users.map(u => u._id);
-      students = students.where('user').in(userIds);
+      filter.user = { $in: users.map(u => u._id) };
     }
 
-    const result = await students.sort({ createdAt: -1 });
+    const total = await Student.countDocuments(filter);
+    const results = await Student.find(filter)
+      .populate('user', 'name email isActive isVerified profileImageUrl')
+      .populate('placedIn', 'name')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
 
-    return success(res, result, 'Students fetched');
+    return success(res, {
+      results,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPrevPage: page > 1
+      }
+    }, 'Students fetched');
   } catch (err) {
     console.error('Get students error:', err);
     return error(res, 'Failed to fetch students', 500);
@@ -124,7 +140,7 @@ exports.getStudent = async (req, res) => {
 // @access  Private (admin)
 exports.updateStudentAcademic = async (req, res) => {
   try {
-    const allowed = ['enrollmentNo', 'branch', 'passingYear',
+    const allowed = ['enrollmentNo', 'branch', 'passingYear', 'currentSemester',
                      'cgpa', 'tenthPercentage', 'twelfthPercentage', 'activeBacklogs'];
     const updates = {};
     allowed.forEach(key => {
@@ -195,6 +211,9 @@ exports.verifyStudentAcademic = async (req, res) => {
 exports.getCompanies = async (req, res) => {
   try {
     const { isApproved, tier, search } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
     const filter = {};
 
     if (isApproved !== undefined) filter.isApproved = isApproved === 'true';
@@ -204,11 +223,24 @@ exports.getCompanies = async (req, res) => {
       filter.name = { $regex: search, $options: 'i' };
     }
 
-    const companies = await Company.find(filter)
+    const total = await Company.countDocuments(filter);
+    const results = await Company.find(filter)
       .populate('user', 'name email isActive isVerified')
+      .skip(skip)
+      .limit(limit)
       .sort({ createdAt: -1 });
 
-    return success(res, companies, 'Companies fetched');
+    return success(res, {
+      results,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPrevPage: page > 1
+      }
+    }, 'Companies fetched');
   } catch (err) {
     console.error('Get companies error:', err);
     return error(res, 'Failed to fetch companies', 500);
@@ -353,6 +385,13 @@ exports.deleteUser = async (req, res) => {
     if (user.role === 'student') {
       const student = await Student.findOne({ user: user._id });
       if (student) {
+        // Bug Fix 5: Delete resume file from disk
+        if (student.resumeUrl) {
+          const filePath = path.join(__dirname, '..', '..', student.resumeUrl);
+          if (fs.existsSync(filePath)) {
+            try { fs.unlinkSync(filePath); } catch (e) { console.log('Could not delete resume file:', e); }
+          }
+        }
         // Cascade delete
         await Application.deleteMany({ student: student._id });
         await Interview.deleteMany({ student: student._id });

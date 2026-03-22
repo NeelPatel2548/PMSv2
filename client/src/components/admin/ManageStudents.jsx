@@ -8,16 +8,22 @@ const ManageStudents = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ search: '', branch: '', passingYear: '' });
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
   
   // Modal state
   const [viewStudent, setViewStudent] = useState(null);
 
   const fetchStudents = async () => {
     try {
-      const params = new URLSearchParams(filters).toString();
+      const params = new URLSearchParams(filters);
+      params.set('page', page);
+      params.set('limit', 10);
       const res = await api.get(`/admin/students?${params}`);
       if (res.data.success) {
-        setStudents(res.data.data);
+        const data = res.data.data;
+        setStudents(data.results || data);
+        if (data.pagination) setPagination(data.pagination);
       }
     } catch (err) {
       console.error('Failed to fetch students', err);
@@ -28,7 +34,7 @@ const ManageStudents = () => {
 
   useEffect(() => {
     fetchStudents();
-  }, [filters]);
+  }, [filters, page]);
 
   const handleToggleStatus = async (id, currentStatus) => {
     try {
@@ -185,6 +191,21 @@ const ManageStudents = () => {
         </div>
       </div>
 
+      {/* Pagination Controls */}
+      {pagination && (
+        <div className="flex items-center justify-between bg-white rounded-2xl p-4 border border-slate-100">
+          <p className="text-sm text-slate-500">
+            Showing {((pagination.page - 1) * pagination.limit) + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+          </p>
+          <div className="flex gap-2">
+            <button disabled={!pagination.hasPrevPage} onClick={() => setPage(p => p - 1)}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium disabled:opacity-40 hover:bg-slate-50 transition">Prev</button>
+            <button disabled={!pagination.hasNextPage} onClick={() => setPage(p => p + 1)}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium disabled:opacity-40 hover:bg-slate-50 transition">Next</button>
+          </div>
+        </div>
+      )}
+
       {/* View Modal */}
       <AnimatePresence>
         {viewStudent && (
@@ -206,13 +227,13 @@ const ManageStudents = () => {
                 {/* Personal */}
                 <div>
                   <h3 className="text-sm font-semibold text-slate-400 tracking-wider uppercase mb-4">Personal Details</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     <div><p className="text-xs text-slate-500">Name</p><p className="font-medium">{viewStudent.user?.name}</p></div>
-                    <div><p className="text-xs text-slate-500">Email</p><p className="font-medium">{viewStudent.user?.email}</p></div>
+                    <div className="overflow-hidden"><p className="text-xs text-slate-500">Email</p><p className="font-medium break-all">{viewStudent.user?.email}</p></div>
                     <div><p className="text-xs text-slate-500">Phone</p><p className="font-medium">{viewStudent.phone || '—'}</p></div>
                     <div><p className="text-xs text-slate-500">DOB</p><p className="font-medium">{viewStudent.dob ? new Date(viewStudent.dob).toLocaleDateString() : '—'}</p></div>
                     <div><p className="text-xs text-slate-500">Gender</p><p className="font-medium capitalize">{viewStudent.gender || '—'}</p></div>
-                    <div className="col-span-2"><p className="text-xs text-slate-500">Address</p><p className="font-medium">{viewStudent.address || '—'}</p></div>
+                    <div className="sm:col-span-2 md:col-span-1"><p className="text-xs text-slate-500">Address</p><p className="font-medium">{viewStudent.address || '—'}</p></div>
                   </div>
                 </div>
 

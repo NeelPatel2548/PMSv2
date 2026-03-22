@@ -75,13 +75,19 @@ exports.register = async (req, res) => {
     user.otpAttempts = 0;
     await user.save();
 
-    // Bug Fix 2: If email fails, delete the ghost user
+    // Bug Fix 3: If email fails, delete the ghost user AND linked role doc
     try {
       await sendOTPEmail(email, otp, 'verification');
     } catch (emailError) {
       console.error('Email send failed during registration:', emailError);
+      // Rollback: delete linked Student or Company doc first
+      if (role === 'student') {
+        await Student.findOneAndDelete({ user: user._id });
+      } else if (role === 'company') {
+        await Company.findOneAndDelete({ user: user._id });
+      }
       await User.findByIdAndDelete(user._id);
-      return error(res, 'Failed to send OTP email. Please try again.', 500);
+      return error(res, 'Failed to send verification email. Please try again.', 500);
     }
 
     return success(res, null, 'OTP sent to email. Please verify your account.', 201);
@@ -252,7 +258,7 @@ exports.login = async (req, res) => {
     const otp = generateOTP();
     user.otp = await hashOTP(otp);
     user.otpExpiry = getOTPExpiry(5);
-    // Do NOT reset otpAttempts on resend — only reset on successful verify
+    user.otpAttempts = 0; // Bug Fix 2: reset attempts when new OTP generated
     await user.save();
 
     await sendOTPEmail(email, otp, 'login');
@@ -373,10 +379,11 @@ exports.resendOTP = async (req, res) => {
       return success(res, null, 'OTP resent (bypass mode — no email sent).');
     }
 
-    // Generate new OTP — DO NOT reset otpAttempts
+    // Generate new OTP and reset attempts so user isn't locked out
     const otp = generateOTP();
     user.otp = await hashOTP(otp);
     user.otpExpiry = getOTPExpiry(purpose === 'login' ? 5 : 10);
+    user.otpAttempts = 0; // Bug Fix 2: reset attempts when new OTP generated
     await user.save();
 
     const otpPurpose = purpose || 'verification';
