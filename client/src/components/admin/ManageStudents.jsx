@@ -94,13 +94,13 @@ const ManageStudents = () => {
             placeholder="Search by name or email..."
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-            className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20"
+            className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm"
           />
         </div>
         <select
           value={filters.branch}
           onChange={(e) => setFilters({ ...filters, branch: e.target.value })}
-          className="px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20 outline-none"
+          className="px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm transition-all"
         >
           <option value="">All Branches</option>
           <option value="CSE">CSE</option>
@@ -112,7 +112,7 @@ const ManageStudents = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -125,10 +125,10 @@ const ManageStudents = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {students.map((student) => (
-                <tr key={student._id} className={`hover:bg-slate-50/50 transition ${!student.user.isActive ? 'opacity-60' : ''}`}>
+                <tr key={student._id} className={`hover:bg-slate-50 transition-colors ${!student.user.isActive ? 'opacity-60' : ''}`}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm">
                         {student.user.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -156,7 +156,7 @@ const ManageStudents = () => {
                     <div className="flex items-center justify-end gap-2">
                        <button
                         onClick={() => handleView(student._id)}
-                        className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition"
+                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                         title="View Full Profile"
                       >
                         <Eye className="w-4 h-4" />
@@ -250,11 +250,11 @@ const ManageStudents = () => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Enrollment No</p>
-                      <input type="text" value={viewStudent.enrollmentNo || ''} onChange={(e) => setViewStudent({...viewStudent, enrollmentNo: e.target.value})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none" />
+                      <input type="text" value={viewStudent.enrollmentNo || ''} onChange={(e) => setViewStudent({...viewStudent, enrollmentNo: e.target.value})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" />
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Branch</p>
-                      <select value={viewStudent.branch || ''} onChange={(e) => setViewStudent({...viewStudent, branch: e.target.value})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none">
+                      <select value={viewStudent.branch || ''} onChange={(e) => setViewStudent({...viewStudent, branch: e.target.value})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none">
                         <option value="">Select</option>
                         <option value="CSE">CSE</option><option value="IT">IT</option><option value="ECE">ECE</option>
                         <option value="EE">EE</option><option value="ME">ME</option><option value="CE">CE</option><option value="Other">Other</option>
@@ -262,27 +262,27 @@ const ManageStudents = () => {
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Passing Year</p>
-                      <input type="number" min="2020" max="2030" value={viewStudent.passingYear || ''} onChange={(e) => setViewStudent({...viewStudent, passingYear: parseInt(e.target.value) || ''})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none" />
+                      <input type="number" min="2020" max="2030" value={viewStudent.passingYear || ''} onChange={(e) => setViewStudent({...viewStudent, passingYear: parseInt(e.target.value) || ''})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" />
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Current Sem</p>
-                      <input type="number" min="1" max="8" value={viewStudent.currentSemester || ''} onChange={(e) => setViewStudent({...viewStudent, currentSemester: parseInt(e.target.value) || ''})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none" />
+                      <input type="number" min="1" max="8" value={viewStudent.currentSemester || ''} onChange={(e) => setViewStudent({...viewStudent, currentSemester: parseInt(e.target.value) || ''})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" />
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 mb-1">CGPA</p>
-                      <input type="number" step="0.01" min="0" max="10" value={viewStudent.cgpa ?? ''} onChange={(e) => setViewStudent({...viewStudent, cgpa: parseFloat(e.target.value) || ''})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none" />
+                      <input type="number" step="0.01" min="0" max="10" value={viewStudent.cgpa ?? ''} onChange={(e) => setViewStudent({...viewStudent, cgpa: parseFloat(e.target.value) || ''})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" />
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 mb-1">10th %</p>
-                      <input type="number" step="0.01" min="0" max="100" value={viewStudent.tenthPercentage ?? ''} onChange={(e) => setViewStudent({...viewStudent, tenthPercentage: parseFloat(e.target.value) || ''})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none" />
+                      <input type="number" step="0.01" min="0" max="100" value={viewStudent.tenthPercentage ?? ''} onChange={(e) => setViewStudent({...viewStudent, tenthPercentage: parseFloat(e.target.value) || ''})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" />
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 mb-1">12th %</p>
-                      <input type="number" step="0.01" min="0" max="100" value={viewStudent.twelfthPercentage ?? ''} onChange={(e) => setViewStudent({...viewStudent, twelfthPercentage: parseFloat(e.target.value) || ''})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none" />
+                      <input type="number" step="0.01" min="0" max="100" value={viewStudent.twelfthPercentage ?? ''} onChange={(e) => setViewStudent({...viewStudent, twelfthPercentage: parseFloat(e.target.value) || ''})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" />
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Active Backlogs</p>
-                      <input type="number" min="0" value={viewStudent.activeBacklogs ?? ''} onChange={(e) => setViewStudent({...viewStudent, activeBacklogs: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none" />
+                      <input type="number" min="0" value={viewStudent.activeBacklogs ?? ''} onChange={(e) => setViewStudent({...viewStudent, activeBacklogs: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" />
                     </div>
                   </div>
                   <div className="flex gap-3">
@@ -305,7 +305,7 @@ const ManageStudents = () => {
                           }
                         } catch (err) { alert(err.response?.data?.message || 'Failed to save'); }
                       }}
-                      className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition"
+                      className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition shadow-sm"
                     >
                       Save Changes
                     </button>
@@ -341,9 +341,9 @@ const ManageStudents = () => {
                 <div>
                   <h3 className="text-sm font-semibold text-slate-400 tracking-wider uppercase mb-4">Links & Resume</h3>
                   <div className="flex flex-wrap gap-4">
-                    {viewStudent.linkedin && <a href={viewStudent.linkedin} target="_blank" rel="noreferrer" className="text-sm text-primary-600 hover:underline">LinkedIn</a>}
-                    {viewStudent.github && <a href={viewStudent.github} target="_blank" rel="noreferrer" className="text-sm text-primary-600 hover:underline">GitHub</a>}
-                    {viewStudent.resumeUrl && <a href={viewStudent.resumeUrl} target="_blank" rel="noreferrer" className="text-sm text-primary-600 hover:underline font-bold">View Resume PDF</a>}
+                    {viewStudent.linkedin && <a href={viewStudent.linkedin} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline">LinkedIn</a>}
+                    {viewStudent.github && <a href={viewStudent.github} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline">GitHub</a>}
+                    {viewStudent.resumeUrl && <a href={viewStudent.resumeUrl} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline font-bold">View Resume PDF</a>}
                     {!viewStudent.linkedin && !viewStudent.github && !viewStudent.resumeUrl && <p className="text-sm text-slate-500">No links provided</p>}
                   </div>
                 </div>

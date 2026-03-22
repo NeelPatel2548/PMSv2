@@ -67,10 +67,10 @@ const CompanyProfile = () => {
   if (loading) return <Loader />;
   if (!profile) return <p className="text-center text-slate-500 mt-10">Profile not found.</p>;
 
-  const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition text-sm";
-  const inputErr = "w-full px-4 py-2.5 rounded-xl border border-red-300 focus:ring-2 focus:ring-red-500/20 focus:border-red-400 outline-none transition text-sm";
+  const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm";
+  const inputErr = "w-full px-4 py-2.5 rounded-xl border border-red-300 focus:ring-2 focus:ring-red-500/20 focus:border-red-400 outline-none transition-all text-sm";
   const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
-  const errText = "text-xs text-red-500 mt-1";
+  const errText = "text-xs text-red-500 mt-1 font-medium";
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -84,7 +84,7 @@ const CompanyProfile = () => {
       )}
 
       <div className="space-y-6">
-        <div className="bg-white rounded-2xl p-6 border border-slate-100">
+        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">Company Details</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className={labelClass}>Company Name</label><input type="text" name="name" value={profile.name || ''} onChange={handleChange} className={inputClass} /></div>
@@ -99,7 +99,7 @@ const CompanyProfile = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 border border-slate-100">
+        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">HR Contact</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className={labelClass}>HR Name</label><input type="text" name="hrName" value={profile.hrName || ''} onChange={handleChange} className={inputClass} /></div>
@@ -116,7 +116,7 @@ const CompanyProfile = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 border border-slate-100">
+        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">Company Tier</h2>
           <TierSelector
             selected={profile.tier || 'tier2'}
@@ -124,7 +124,7 @@ const CompanyProfile = () => {
           />
         </div>
 
-        <div className="bg-white rounded-2xl p-4 border border-slate-100">
+        <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
           <div className="flex items-center gap-2">
             <span className={`px-3 py-1 rounded-full text-sm font-semibold ${profile.isApproved ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
               {profile.isApproved ? '✅ Approved' : '⏳ Pending Approval'}
@@ -133,7 +133,7 @@ const CompanyProfile = () => {
         </div>
 
         <button onClick={handleSave} disabled={saving}
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold hover:from-primary-700 hover:to-primary-800 transition-all disabled:opacity-60 flex items-center justify-center gap-2">
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25">
           <Save className="w-5 h-5" />{saving ? 'Saving...' : 'Save Profile'}
         </button>
       </div>

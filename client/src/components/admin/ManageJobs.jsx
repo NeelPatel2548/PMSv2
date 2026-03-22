@@ -62,7 +62,7 @@ const ManageJobs = () => {
       </div>
 
       {loading ? <Loader /> : (
-        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-100">
@@ -78,7 +78,7 @@ const ManageJobs = () => {
               </thead>
               <tbody>
                 {jobs.map(j => (
-                  <tr key={j._id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                  <tr key={j._id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                     <td className="p-3 font-medium text-slate-800">{j.title}</td>
                     <td className="p-3 text-slate-600">{j.company?.name || '—'}</td>
                     <td className="p-3 text-slate-600 capitalize">{j.jobType}</td>

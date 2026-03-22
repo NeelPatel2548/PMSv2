@@ -106,7 +106,7 @@ const ApplicantList = () => {
     rejected: applicants.filter(a => a.status === 'rejected').length,
   };
 
-  const inputClass = "w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none";
+  const inputClass = "w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all";
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -131,9 +131,9 @@ const ApplicantList = () => {
           { label: 'Selected', value: stats.selected, color: 'bg-green-50 text-green-700' },
           { label: 'Rejected', value: stats.rejected, color: 'bg-red-50 text-red-700' },
         ].map(s => (
-          <div key={s.label} className={`rounded-xl p-3 text-center ${s.color}`}>
-            <p className="text-xl font-bold">{s.value}</p>
-            <p className="text-xs font-medium">{s.label}</p>
+          <div key={s.label} className={`rounded-full px-4 py-1.5 text-center border bg-white ${s.color}`}>
+            <span className="text-lg font-bold">{s.value}</span>{' '}
+            <span className="text-xs font-medium">{s.label}</span>
           </div>
         ))}
       </div>
@@ -142,10 +142,10 @@ const ApplicantList = () => {
       <div className="flex flex-wrap gap-2">
         {TABS.map(tab => (
           <button key={tab} onClick={() => setFilter(tab)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition ${
+            className={`px-4 py-2 text-sm font-medium capitalize transition-all border-b-2 rounded-none ${
               filter === tab
-                ? 'bg-primary-600 text-white shadow-md'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}>
             {tab === 'all' ? `All (${stats.total})` : `${tab} (${stats[tab]})`}
           </button>
@@ -166,7 +166,7 @@ const ApplicantList = () => {
               {/* Student Info */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center shrink-0 text-sm">
                     {app.student?.user?.name?.charAt(0)?.toUpperCase() || '?'}
                   </div>
                   <div>
@@ -187,7 +187,7 @@ const ApplicantList = () => {
               {app.student?.skills?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-3">
                   {app.student.skills.map((s, j) => (
-                    <span key={j} className="px-2.5 py-0.5 rounded-lg bg-primary-50 text-xs font-medium text-primary-700 border border-primary-100">{s}</span>
+                    <span key={j} className="px-2.5 py-0.5 rounded-lg bg-indigo-50 text-xs font-medium text-indigo-700 border border-indigo-100">{s}</span>
                   ))}
                 </div>
               )}

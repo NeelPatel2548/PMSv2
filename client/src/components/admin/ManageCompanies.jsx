@@ -63,7 +63,7 @@ const ManageCompanies = () => {
         <h1 className="text-2xl font-bold text-slate-800 mb-6">Manage Companies</h1>
       </motion.div>
 
-      <div className="bg-white rounded-2xl p-4 border border-slate-100 mb-6 flex flex-wrap gap-3 items-end">
+      <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm mb-6 flex flex-wrap gap-3 items-end">
         <form onSubmit={handleSearch} className="flex-1 min-w-[200px] relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input type="text" value={filters.search} onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
@@ -89,7 +89,7 @@ const ManageCompanies = () => {
           {companies.length === 0 && <p className="text-center text-slate-400 py-8">No companies found.</p>}
           {companies.map((c, i) => (
             <motion.div key={c._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-              className="bg-white rounded-2xl p-5 border border-slate-100 hover:shadow-sm transition-shadow">
+              className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-lg font-bold text-slate-600">

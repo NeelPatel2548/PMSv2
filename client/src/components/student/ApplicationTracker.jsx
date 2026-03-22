@@ -13,6 +13,22 @@ const statusColors = {
   withdrawn: 'bg-slate-100 text-slate-500',
 };
 
+// Timeline steps in order
+const timelineSteps = ['applied', 'shortlisted', 'interview', 'selected'];
+
+const getStepState = (currentStatus, stepStatus) => {
+  if (currentStatus === 'rejected' || currentStatus === 'withdrawn') {
+    const idx = timelineSteps.indexOf(stepStatus);
+    const curIdx = Math.max(timelineSteps.indexOf(currentStatus), 0);
+    return idx <= curIdx ? 'completed' : 'pending';
+  }
+  const currentIdx = timelineSteps.indexOf(currentStatus);
+  const stepIdx = timelineSteps.indexOf(stepStatus);
+  if (stepIdx < currentIdx) return 'completed';
+  if (stepIdx === currentIdx) return 'current';
+  return 'pending';
+};
+
 const ApplicationTracker = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,14 +69,14 @@ const ApplicationTracker = () => {
           <p className="text-sm mt-1">Browse eligible jobs and start applying</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {applications.map((app, i) => (
             <motion.div
               key={app._id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
-              className="bg-white rounded-2xl p-5 border border-slate-100 hover:shadow-sm transition-shadow"
+              className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -80,14 +96,47 @@ const ApplicationTracker = () => {
                     <button
                       onClick={() => handleWithdraw(app._id)}
                       disabled={withdrawing === app._id}
-                      className="text-xs text-red-500 hover:text-red-600 font-medium flex items-center gap-1"
+                      className="text-xs text-red-500 hover:text-red-600 hover:bg-red-50 font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all"
                     >
-                      <XCircle className="w-3.5 h-3.5" />Withdraw
+                      <XCircle className="w-3.5 h-3.5" />{withdrawing === app._id ? 'Withdrawing...' : 'Withdraw'}
                     </button>
                   )}
                 </div>
               </div>
-              <p className="text-xs text-slate-300 mt-2">Applied: {new Date(app.createdAt).toLocaleDateString()}</p>
+
+              {/* Timeline Stepper */}
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  {timelineSteps.map((step, idx) => {
+                    const state = getStepState(app.status, step);
+                    return (
+                      <div key={step} className="flex items-center flex-1">
+                        <div className="flex flex-col items-center">
+                          <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                            state === 'completed' ? 'bg-emerald-500' :
+                            state === 'current' ? 'bg-indigo-500 ring-4 ring-indigo-100' :
+                            'bg-slate-300'
+                          }`} />
+                          <span className={`text-[10px] mt-1.5 font-medium capitalize ${
+                            state === 'completed' ? 'text-emerald-600' :
+                            state === 'current' ? 'text-indigo-600' :
+                            'text-slate-400'
+                          }`}>{step}</span>
+                        </div>
+                        {idx < timelineSteps.length - 1 && (
+                          <div className={`flex-1 h-0.5 mx-1.5 rounded-full ${
+                            getStepState(app.status, timelineSteps[idx + 1]) !== 'pending'
+                              ? 'bg-emerald-300'
+                              : 'bg-slate-200'
+                          }`} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-300 mt-3">Applied: {new Date(app.createdAt).toLocaleDateString()}</p>
             </motion.div>
           ))}
         </div>
