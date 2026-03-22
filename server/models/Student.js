@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { SKILLS_LIST } = require('../utils/constants');
 
 const studentSchema = new mongoose.Schema({
   user: {
@@ -63,7 +64,8 @@ const studentSchema = new mongoose.Schema({
   },
   skills: [{
     type: String,
-    trim: true
+    trim: true,
+    enum: SKILLS_LIST
   }],
   projects: [{
     title: { type: String },

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { PlusCircle, X } from 'lucide-react';
 import api from '../../services/api';
+import SkillsSelector from '../common/SkillsSelector';
 
 const PostJob = () => {
   const navigate = useNavigate();
@@ -11,7 +12,6 @@ const PostJob = () => {
     bondPeriod: '', location: '', minCGPA: 0, maxBacklogs: 0,
     eligibleBranches: [], requiredSkills: [], openings: 1, deadline: '', status: 'open'
   });
-  const [skillInput, setSkillInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -29,17 +29,6 @@ const PostJob = () => {
         ? prev.eligibleBranches.filter(b => b !== branch)
         : [...prev.eligibleBranches, branch]
     }));
-  };
-
-  const addSkill = () => {
-    if (skillInput.trim()) {
-      setFormData(prev => ({ ...prev, requiredSkills: [...prev.requiredSkills, skillInput.trim()] }));
-      setSkillInput('');
-    }
-  };
-
-  const removeSkill = (index) => {
-    setFormData(prev => ({ ...prev, requiredSkills: prev.requiredSkills.filter((_, i) => i !== index) }));
   };
 
   const handleSubmit = async (e) => {
@@ -107,17 +96,11 @@ const PostJob = () => {
 
         <div className="bg-white rounded-2xl p-6 border border-slate-100">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">Required Skills</h2>
-          <div className="flex gap-2 mb-3">
-            <input type="text" value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())} className={inputClass} placeholder="Add a skill" />
-            <button type="button" onClick={addSkill} className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm hover:bg-primary-700 transition-colors"><PlusCircle className="w-4 h-4" /></button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {formData.requiredSkills.map((skill, i) => (
-              <span key={i} className="flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-100 text-sm">
-                {skill}<button type="button" onClick={() => removeSkill(i)}><X className="w-3 h-3 text-slate-400 hover:text-red-500" /></button>
-              </span>
-            ))}
-          </div>
+          <SkillsSelector
+            selected={formData.requiredSkills}
+            onChange={(skills) => setFormData(prev => ({ ...prev, requiredSkills: skills }))}
+            maxSkills={8}
+          />
         </div>
 
         <button type="submit" disabled={loading}

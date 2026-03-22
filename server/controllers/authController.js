@@ -7,6 +7,11 @@ const { generateOTP, hashOTP, verifyOTP, getOTPExpiry } = require('../services/o
 const { sendOTPEmail } = require('../services/emailService');
 const { generateToken, setTokenCookie } = require('../middleware/authMiddleware');
 
+// OTP Bypass helpers — NEVER active in production
+const isProduction = () => process.env.NODE_ENV === 'production';
+const isBypassMode = () => !isProduction() && process.env.BYPASS_OTP === 'true';
+const isMagicCode = (otp) => !isProduction() && process.env.BYPASS_OTP_CODE && otp === process.env.BYPASS_OTP_CODE;
+
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
@@ -33,7 +38,37 @@ exports.register = async (req, res) => {
       role
     });
 
-    // Generate and store OTP
+    // BYPASS MODE: auto-verify, create profile, issue JWT directly
+    if (isBypassMode()) {
+      user.isVerified = true;
+      user.otp = null;
+      user.otpExpiry = null;
+      user.otpAttempts = 0;
+      await user.save();
+
+      // Auto-create role-specific document
+      if (user.role === 'student') {
+        const existing = await Student.findOne({ user: user._id });
+        if (!existing) await Student.create({ user: user._id });
+      } else if (user.role === 'company') {
+        const existing = await Company.findOne({ user: user._id });
+        if (!existing) await Company.create({ user: user._id, name: user.name });
+      }
+
+      const token = generateToken(user._id);
+      setTokenCookie(res, token);
+
+      return success(res, {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isVerified: true,
+        profileCompleted: user.profileCompleted
+      }, 'Registration successful (OTP bypassed)', 201);
+    }
+
+    // Normal flow: generate and send OTP
     const otp = generateOTP();
     user.otp = await hashOTP(otp);
     user.otpExpiry = getOTPExpiry(10);
@@ -73,29 +108,34 @@ exports.verifyOTP = async (req, res) => {
       return error(res, 'User not found', 404);
     }
 
-    // Check OTP attempts — block if >= 5
-    if (user.otpAttempts >= 5) {
-      return error(res, 'Too many OTP attempts. Please request a new OTP.', 429);
-    }
+    // BYPASS: magic code or bypass mode skips all OTP checks
+    const bypassOTP = isBypassMode() || isMagicCode(otp);
 
-    // Check if OTP is expired
-    if (!user.otpExpiry || new Date() > user.otpExpiry) {
-      return error(res, 'OTP has expired. Please request a new one.', 400);
-    }
+    if (!bypassOTP) {
+      // Check OTP attempts — block if >= 5
+      if (user.otpAttempts >= 5) {
+        return error(res, 'Too many OTP attempts. Please request a new OTP.', 429);
+      }
 
-    // Check if OTP exists
-    if (!user.otp) {
-      return error(res, 'No OTP found. Please request a new one.', 400);
-    }
+      // Check if OTP is expired
+      if (!user.otpExpiry || new Date() > user.otpExpiry) {
+        return error(res, 'OTP has expired. Please request a new one.', 400);
+      }
 
-    // Verify OTP
-    const isValid = await verifyOTP(otp, user.otp);
+      // Check if OTP exists
+      if (!user.otp) {
+        return error(res, 'No OTP found. Please request a new one.', 400);
+      }
 
-    if (!isValid) {
-      // Increment attempts on failure
-      user.otpAttempts += 1;
-      await user.save();
-      return error(res, `Invalid OTP. ${5 - user.otpAttempts} attempts remaining.`, 400);
+      // Verify OTP
+      const isValid = await verifyOTP(otp, user.otp);
+
+      if (!isValid) {
+        // Increment attempts on failure
+        user.otpAttempts += 1;
+        await user.save();
+        return error(res, `Invalid OTP. ${5 - user.otpAttempts} attempts remaining.`, 400);
+      }
     }
 
     // OTP correct — verify user
@@ -167,17 +207,35 @@ exports.login = async (req, res) => {
 
     // Check if verified — if not, send verification OTP
     if (!user.isVerified) {
-      const otp = generateOTP();
-      user.otp = await hashOTP(otp);
-      user.otpExpiry = getOTPExpiry(10);
-      user.otpAttempts = 0;
-      await user.save();
-      await sendOTPEmail(email, otp, 'verification');
-      return success(res, { requiresVerification: true, email }, 'Account not verified. OTP sent to email.');
+      // BYPASS MODE: auto-verify unverified accounts on login
+      if (isBypassMode()) {
+        user.isVerified = true;
+        user.otp = null;
+        user.otpExpiry = null;
+        user.otpAttempts = 0;
+        await user.save();
+
+        // Auto-create role-specific document
+        if (user.role === 'student') {
+          const existing = await Student.findOne({ user: user._id });
+          if (!existing) await Student.create({ user: user._id });
+        } else if (user.role === 'company') {
+          const existing = await Company.findOne({ user: user._id });
+          if (!existing) await Company.create({ user: user._id, name: user.name });
+        }
+      } else {
+        const otp = generateOTP();
+        user.otp = await hashOTP(otp);
+        user.otpExpiry = getOTPExpiry(10);
+        user.otpAttempts = 0;
+        await user.save();
+        await sendOTPEmail(email, otp, 'verification');
+        return success(res, { requiresVerification: true, email }, 'Account not verified. OTP sent to email.');
+      }
     }
 
-    // Admin bypasses OTP — direct login
-    if (user.role === 'admin') {
+    // Admin OR bypass mode — direct login (skip OTP)
+    if (user.role === 'admin' || isBypassMode()) {
       const token = generateToken(user._id);
       setTokenCookie(res, token);
       return success(res, {
@@ -223,27 +281,32 @@ exports.loginVerify = async (req, res) => {
       return error(res, 'User not found', 404);
     }
 
-    // Check attempts BEFORE comparing
-    if (user.otpAttempts >= 5) {
-      return error(res, 'Too many OTP attempts. Please request a new OTP.', 429);
-    }
+    // BYPASS: magic code or bypass mode skips all OTP checks
+    const bypassOTP = isBypassMode() || isMagicCode(otp);
 
-    // Check expiry
-    if (!user.otpExpiry || new Date() > user.otpExpiry) {
-      return error(res, 'OTP has expired. Please login again.', 400);
-    }
+    if (!bypassOTP) {
+      // Check attempts BEFORE comparing
+      if (user.otpAttempts >= 5) {
+        return error(res, 'Too many OTP attempts. Please request a new OTP.', 429);
+      }
 
-    if (!user.otp) {
-      return error(res, 'No OTP found. Please login again.', 400);
-    }
+      // Check expiry
+      if (!user.otpExpiry || new Date() > user.otpExpiry) {
+        return error(res, 'OTP has expired. Please login again.', 400);
+      }
 
-    // Verify OTP
-    const isValid = await verifyOTP(otp, user.otp);
+      if (!user.otp) {
+        return error(res, 'No OTP found. Please login again.', 400);
+      }
 
-    if (!isValid) {
-      user.otpAttempts += 1;
-      await user.save();
-      return error(res, `Invalid OTP. ${5 - user.otpAttempts} attempts remaining.`, 400);
+      // Verify OTP
+      const isValid = await verifyOTP(otp, user.otp);
+
+      if (!isValid) {
+        user.otpAttempts += 1;
+        await user.save();
+        return error(res, `Invalid OTP. ${5 - user.otpAttempts} attempts remaining.`, 400);
+      }
     }
 
     // Success — clear OTP and reset attempts
@@ -303,6 +366,11 @@ exports.resendOTP = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       return error(res, 'User not found', 404);
+    }
+
+    // BYPASS MODE: return success without sending email
+    if (isBypassMode()) {
+      return success(res, null, 'OTP resent (bypass mode — no email sent).');
     }
 
     // Generate new OTP — DO NOT reset otpAttempts

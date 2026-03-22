@@ -53,7 +53,7 @@ const JobCard = ({ job, onApply, applying }) => {
       {job.requiredSkills?.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
           {job.requiredSkills.slice(0, 5).map((skill, i) => (
-            <span key={i} className="px-2 py-0.5 rounded-lg bg-slate-100 text-xs text-slate-600">{skill}</span>
+            <span key={i} className="px-2.5 py-0.5 rounded-lg bg-primary-50 text-xs font-medium text-primary-700 border border-primary-100">{skill}</span>
           ))}
           {job.requiredSkills.length > 5 && <span className="text-xs text-slate-400">+{job.requiredSkills.length - 5}</span>}
         </div>
