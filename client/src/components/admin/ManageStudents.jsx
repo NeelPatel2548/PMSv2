@@ -216,18 +216,94 @@ const ManageStudents = () => {
                   </div>
                 </div>
 
-                {/* Academics */}
+                {/* Academics — Admin Editable with Verification Controls */}
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-400 tracking-wider uppercase mb-4">Academic Records</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div><p className="text-xs text-slate-500">Enrollment No</p><p className="font-medium">{viewStudent.enrollmentNo || '—'}</p></div>
-                    <div><p className="text-xs text-slate-500">Branch</p><p className="font-medium">{viewStudent.branch || '—'}</p></div>
-                    <div><p className="text-xs text-slate-500">Passing Year</p><p className="font-medium">{viewStudent.passingYear || '—'}</p></div>
-                    <div><p className="text-xs text-slate-500">Current Sem</p><p className="font-medium">{viewStudent.currentSemester || '—'}</p></div>
-                    <div><p className="text-xs text-slate-500">CGPA</p><p className="font-medium text-emerald-600 font-semibold">{viewStudent.cgpa || '—'}</p></div>
-                    <div><p className="text-xs text-slate-500">10th %</p><p className="font-medium">{viewStudent.tenthPercentage || '—'}</p></div>
-                    <div><p className="text-xs text-slate-500">12th %</p><p className="font-medium">{viewStudent.twelfthPercentage || '—'}</p></div>
-                    <div><p className="text-xs text-slate-500">Active Backlogs</p><p className="font-medium text-red-500 font-semibold">{viewStudent.activeBacklogs || 0}</p></div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <h3 className="text-sm font-semibold text-slate-400 tracking-wider uppercase">Academic Records</h3>
+                    {viewStudent.academicVerified ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Verified</span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Pending</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Enrollment No</p>
+                      <input type="text" value={viewStudent.enrollmentNo || ''} onChange={(e) => setViewStudent({...viewStudent, enrollmentNo: e.target.value})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Branch</p>
+                      <select value={viewStudent.branch || ''} onChange={(e) => setViewStudent({...viewStudent, branch: e.target.value})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none">
+                        <option value="">Select</option>
+                        <option value="CSE">CSE</option><option value="IT">IT</option><option value="ECE">ECE</option>
+                        <option value="EE">EE</option><option value="ME">ME</option><option value="CE">CE</option><option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Passing Year</p>
+                      <input type="number" min="2020" max="2030" value={viewStudent.passingYear || ''} onChange={(e) => setViewStudent({...viewStudent, passingYear: parseInt(e.target.value) || ''})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Current Sem</p>
+                      <input type="number" min="1" max="8" value={viewStudent.currentSemester || ''} onChange={(e) => setViewStudent({...viewStudent, currentSemester: parseInt(e.target.value) || ''})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">CGPA</p>
+                      <input type="number" step="0.01" min="0" max="10" value={viewStudent.cgpa ?? ''} onChange={(e) => setViewStudent({...viewStudent, cgpa: parseFloat(e.target.value) || ''})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">10th %</p>
+                      <input type="number" step="0.01" min="0" max="100" value={viewStudent.tenthPercentage ?? ''} onChange={(e) => setViewStudent({...viewStudent, tenthPercentage: parseFloat(e.target.value) || ''})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">12th %</p>
+                      <input type="number" step="0.01" min="0" max="100" value={viewStudent.twelfthPercentage ?? ''} onChange={(e) => setViewStudent({...viewStudent, twelfthPercentage: parseFloat(e.target.value) || ''})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Active Backlogs</p>
+                      <input type="number" min="0" value={viewStudent.activeBacklogs ?? ''} onChange={(e) => setViewStudent({...viewStudent, activeBacklogs: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none" />
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={async () => {
+                        try {
+                          const res = await api.put(`/admin/students/${viewStudent._id}/academic`, {
+                            enrollmentNo: viewStudent.enrollmentNo,
+                            branch: viewStudent.branch,
+                            passingYear: viewStudent.passingYear,
+                            cgpa: viewStudent.cgpa,
+                            tenthPercentage: viewStudent.tenthPercentage,
+                            twelfthPercentage: viewStudent.twelfthPercentage,
+                            activeBacklogs: viewStudent.activeBacklogs
+                          });
+                          if (res.data.success) {
+                            setViewStudent(res.data.data);
+                            fetchStudents();
+                            alert('Records updated. Verification has been reset.');
+                          }
+                        } catch (err) { alert(err.response?.data?.message || 'Failed to save'); }
+                      }}
+                      className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition"
+                    >
+                      Save Changes
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const res = await api.put(`/admin/students/${viewStudent._id}/verify-academic`);
+                          if (res.data.success) {
+                            setViewStudent(res.data.data);
+                            fetchStudents();
+                            alert('Academic records verified successfully');
+                          }
+                        } catch (err) { alert(err.response?.data?.message || 'Failed to verify'); }
+                      }}
+                      disabled={!viewStudent.enrollmentNo && !viewStudent.branch && viewStudent.cgpa == null}
+                      className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Verify Records
+                    </button>
                   </div>
                 </div>
 

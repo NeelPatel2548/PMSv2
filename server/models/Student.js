@@ -100,6 +100,19 @@ const studentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company',
     default: null
+  },
+  academicVerified: {
+    type: Boolean,
+    default: false
+  },
+  academicVerifiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  academicVerifiedAt: {
+    type: Date,
+    default: null
   }
 }, { timestamps: true });
 

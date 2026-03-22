@@ -169,19 +169,76 @@ const StudentProfile = () => {
           </div>
         </div>
 
-        {/* Academic Info — READ ONLY */}
+        {/* Academic Records — 3-state: editable/pending/verified */}
         <div className="bg-white rounded-2xl p-6 border border-slate-100">
           <h2 className="text-lg font-semibold text-slate-800 mb-1">Academic Records</h2>
-          <p className="text-xs text-slate-400 mb-4">These fields are managed by administration and cannot be edited.</p>
+
+          {profile.academicVerified ? (
+            <div className="flex items-center gap-2 mb-4 p-3 rounded-xl bg-green-50 border border-green-100 text-green-700 text-sm">
+              <CheckCircle className="w-4 h-4" />
+              <span>Your academic records have been verified by the administration.{profile.academicVerifiedAt && ` Verified on ${new Date(profile.academicVerifiedAt).toLocaleDateString()}`}</span>
+            </div>
+          ) : profile.enrollmentNo || profile.branch || profile.cgpa != null ? (
+            <div className="flex items-center gap-2 mb-4 p-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-sm">
+              <span>⏳ Your academic records are pending admin verification. You can still make changes.</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 mb-4 p-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 text-sm">
+              <span>ℹ️ Fill in your academic details and save for admin verification.</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div><label className={labelClass}>Enrollment No</label><input value={profile.enrollmentNo || '—'} readOnly className={readOnly} /></div>
-            <div><label className={labelClass}>Branch</label><input value={profile.branch || '—'} readOnly className={readOnly} /></div>
-            <div><label className={labelClass}>Passing Year</label><input value={profile.passingYear || '—'} readOnly className={readOnly} /></div>
-            <div><label className={labelClass}>CGPA</label><input value={profile.cgpa ?? '—'} readOnly className={readOnly} /></div>
-            <div><label className={labelClass}>10th %</label><input value={profile.tenthPercentage ?? '—'} readOnly className={readOnly} /></div>
-            <div><label className={labelClass}>12th %</label><input value={profile.twelfthPercentage ?? '—'} readOnly className={readOnly} /></div>
-            <div><label className={labelClass}>Active Backlogs</label><input value={profile.activeBacklogs ?? 0} readOnly className={readOnly} /></div>
-            <div><label className={labelClass}>Placement Status</label><input value={profile.placementStatus || 'unplaced'} readOnly className={readOnly} /></div>
+            <div>
+              <label className={labelClass}>Enrollment No</label>
+              {profile.academicVerified
+                ? <input value={profile.enrollmentNo || '—'} readOnly className={readOnly} />
+                : <input type="text" value={profile.enrollmentNo || ''} onChange={(e) => handleChange('enrollmentNo', e.target.value)} className={inputClass} placeholder="e.g. EN20CS1234" />}
+            </div>
+            <div>
+              <label className={labelClass}>Branch</label>
+              {profile.academicVerified
+                ? <input value={profile.branch || '—'} readOnly className={readOnly} />
+                : <select value={profile.branch || ''} onChange={(e) => handleChange('branch', e.target.value)} className={inputClass}>
+                    <option value="">Select Branch</option>
+                    <option value="CSE">CSE</option><option value="IT">IT</option><option value="ECE">ECE</option>
+                    <option value="EE">EE</option><option value="ME">ME</option><option value="CE">CE</option><option value="Other">Other</option>
+                  </select>}
+            </div>
+            <div>
+              <label className={labelClass}>Passing Year</label>
+              {profile.academicVerified
+                ? <input value={profile.passingYear || '—'} readOnly className={readOnly} />
+                : <input type="number" min="2020" max="2030" value={profile.passingYear || ''} onChange={(e) => handleChange('passingYear', parseInt(e.target.value) || '')} className={inputClass} />}
+            </div>
+            <div>
+              <label className={labelClass}>CGPA</label>
+              {profile.academicVerified
+                ? <input value={profile.cgpa ?? '—'} readOnly className={readOnly} />
+                : <input type="number" step="0.01" min="0" max="10" value={profile.cgpa ?? ''} onChange={(e) => handleChange('cgpa', parseFloat(e.target.value) || '')} className={inputClass} />}
+            </div>
+            <div>
+              <label className={labelClass}>10th %</label>
+              {profile.academicVerified
+                ? <input value={profile.tenthPercentage ?? '—'} readOnly className={readOnly} />
+                : <input type="number" step="0.01" min="0" max="100" value={profile.tenthPercentage ?? ''} onChange={(e) => handleChange('tenthPercentage', parseFloat(e.target.value) || '')} className={inputClass} />}
+            </div>
+            <div>
+              <label className={labelClass}>12th %</label>
+              {profile.academicVerified
+                ? <input value={profile.twelfthPercentage ?? '—'} readOnly className={readOnly} />
+                : <input type="number" step="0.01" min="0" max="100" value={profile.twelfthPercentage ?? ''} onChange={(e) => handleChange('twelfthPercentage', parseFloat(e.target.value) || '')} className={inputClass} />}
+            </div>
+            <div>
+              <label className={labelClass}>Active Backlogs</label>
+              {profile.academicVerified
+                ? <input value={profile.activeBacklogs ?? 0} readOnly className={readOnly} />
+                : <input type="number" min="0" value={profile.activeBacklogs ?? ''} onChange={(e) => handleChange('activeBacklogs', parseInt(e.target.value) || 0)} className={inputClass} />}
+            </div>
+            <div>
+              <label className={labelClass}>Placement Status</label>
+              <input value={profile.placementStatus || 'unplaced'} readOnly className={readOnly} />
+            </div>
           </div>
         </div>
 

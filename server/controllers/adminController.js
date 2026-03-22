@@ -119,6 +119,76 @@ exports.getStudent = async (req, res) => {
   }
 };
 
+// @desc    Update student academic records (admin)
+// @route   PUT /api/admin/students/:id/academic
+// @access  Private (admin)
+exports.updateStudentAcademic = async (req, res) => {
+  try {
+    const allowed = ['enrollmentNo', 'branch', 'passingYear',
+                     'cgpa', 'tenthPercentage', 'twelfthPercentage', 'activeBacklogs'];
+    const updates = {};
+    allowed.forEach(key => {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    });
+
+    // Reset verification since data changed
+    updates.academicVerified = false;
+    updates.academicVerifiedBy = null;
+    updates.academicVerifiedAt = null;
+
+    const student = await Student.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { returnDocument: 'after', runValidators: true }
+    ).populate('user', 'name email isActive isVerified profileImageUrl createdAt')
+     .populate('placedIn', 'name');
+
+    if (!student) {
+      return error(res, 'Student not found', 404);
+    }
+
+    return success(res, student, 'Academic records updated. Verification has been reset.');
+  } catch (err) {
+    console.error('Update student academic error:', err);
+    return error(res, 'Failed to update academic records', 500);
+  }
+};
+
+// @desc    Verify student academic records (admin)
+// @route   PUT /api/admin/students/:id/verify-academic
+// @access  Private (admin)
+exports.verifyStudentAcademic = async (req, res) => {
+  try {
+    const student = await Student.findById(req.params.id);
+    if (!student) {
+      return error(res, 'Student not found', 404);
+    }
+
+    student.academicVerified = true;
+    student.academicVerifiedBy = req.user._id;
+    student.academicVerifiedAt = new Date();
+    await student.save();
+
+    // Notify student
+    await Notification.create({
+      user: student.user,
+      title: 'Academic Records Verified',
+      message: 'Your academic records have been verified by the administration.',
+      type: 'announcement'
+    });
+
+    const updated = await Student.findById(req.params.id)
+      .populate('user', 'name email isActive isVerified profileImageUrl createdAt')
+      .populate('placedIn', 'name')
+      .populate('academicVerifiedBy', 'name');
+
+    return success(res, updated, 'Academic records verified successfully');
+  } catch (err) {
+    console.error('Verify student academic error:', err);
+    return error(res, 'Failed to verify academic records', 500);
+  }
+};
+
 // @desc    Get all companies
 // @route   GET /api/admin/companies
 // @access  Private (admin)

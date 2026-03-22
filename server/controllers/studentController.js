@@ -38,25 +38,46 @@ exports.updateProfile = async (req, res) => {
       return error(res, 'Validation failed', 400, errors.array());
     }
 
-    // Whitelist allowed fields — students CANNOT edit academic/locked fields
-    const allowed = ['name', 'phone', 'address', 'gender', 'dob',
+    const student = await Student.findOne({ user: req.user._id });
+    if (!student) {
+      return error(res, 'Student profile not found', 404);
+    }
+
+    // Whitelist allowed personal fields — always editable
+    const personalFields = ['name', 'phone', 'address', 'gender', 'dob',
                      'linkedin', 'github', 'skills',
                      'projects', 'certifications', 'internshipExperience'];
+    const academicFields = ['enrollmentNo', 'branch', 'passingYear',
+                            'cgpa', 'tenthPercentage', 'twelfthPercentage', 'activeBacklogs'];
+
+    // Check if request contains academic fields
+    const hasAcademicUpdates = academicFields.some(key => req.body[key] !== undefined);
+
+    // Block academic edits if already verified
+    if (hasAcademicUpdates && student.academicVerified) {
+      return error(res, 'Academic records are verified and locked. Contact admin to make changes.', 403);
+    }
+
     const updates = {};
-    allowed.forEach(key => {
-      if (key === 'name') return; // handled separately on User model
+
+    // Personal fields (name handled separately on User)
+    personalFields.forEach(key => {
+      if (key === 'name') return;
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     });
 
-    const student = await Student.findOneAndUpdate(
+    // Academic fields (only when not verified)
+    if (!student.academicVerified) {
+      academicFields.forEach(key => {
+        if (req.body[key] !== undefined) updates[key] = req.body[key];
+      });
+    }
+
+    const updatedStudent = await Student.findOneAndUpdate(
       { user: req.user._id },
       updates,
       { returnDocument: 'after', runValidators: true }
     ).populate('user', 'name email profileImageUrl profileCompleted');
-
-    if (!student) {
-      return error(res, 'Student profile not found', 404);
-    }
 
     // If name was sent, update on User model too
     if (req.body.name && req.body.name.trim()) {
@@ -64,16 +85,17 @@ exports.updateProfile = async (req, res) => {
     }
 
     // Check if profile is reasonably complete and update User.profileCompleted
-    const isComplete = student.phone && student.gender && student.branch;
+    const isComplete = updatedStudent.phone && updatedStudent.gender && updatedStudent.branch;
     if (isComplete) {
       await User.findByIdAndUpdate(req.user._id, { profileCompleted: true });
     }
 
     // Re-fetch with updated user name
-    const updated = await Student.findOne({ user: req.user._id })
-      .populate('user', 'name email profileImageUrl profileCompleted');
+    const final = await Student.findOne({ user: req.user._id })
+      .populate('user', 'name email profileImageUrl profileCompleted')
+      .populate('academicVerifiedBy', 'name');
 
-    return success(res, updated, 'Profile updated');
+    return success(res, final, 'Profile updated');
   } catch (err) {
     console.error('Update profile error:', err);
     return error(res, 'Failed to update profile', 500);

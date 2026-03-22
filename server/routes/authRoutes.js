@@ -24,7 +24,7 @@ router.post(
     body('name').trim().notEmpty().withMessage('Name is required'),
     body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    body('role').isIn(['student', 'company', 'admin']).withMessage('Role must be student, company, or admin')
+    body('role').isIn(['student', 'company']).withMessage('Role must be student or company')
   ],
   register
 );

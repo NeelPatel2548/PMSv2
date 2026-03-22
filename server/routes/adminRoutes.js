@@ -6,6 +6,8 @@ const {
   getDashboard,
   getStudents,
   getStudent,
+  updateStudentAcademic,
+  verifyStudentAcademic,
   getCompanies,
   approveCompany,
   updateCompany,
@@ -27,6 +29,8 @@ router.get('/dashboard', getDashboard);
 // Students — view only, suspend/unsuspend, delete
 router.get('/students', getStudents);
 router.get('/students/:id', getStudent);
+router.put('/students/:id/academic', updateStudentAcademic);
+router.put('/students/:id/verify-academic', verifyStudentAcademic);
 
 // Companies
 router.get('/companies', getCompanies);
