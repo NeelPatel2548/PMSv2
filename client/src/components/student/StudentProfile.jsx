@@ -11,12 +11,10 @@ const StudentProfile = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [uploading, setUploading] = useState(false);
-
-  // Tag inputs (skill input removed — using SkillsSelector now)
+  const [errors, setErrors] = useState({});
 
   // Project form
   const [projectForm, setProjectForm] = useState({ title: '', description: '', link: '' });
-
   // Cert form
   const [certForm, setCertForm] = useState({ title: '', issuedBy: '', year: '', link: '' });
 
@@ -32,6 +30,7 @@ const StudentProfile = () => {
 
   const handleChange = (field, value) => {
     setProfile(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
   const handleNameChange = (value) => {
@@ -40,9 +39,47 @@ const StudentProfile = () => {
       user: { ...prev.user, name: value },
       _userName: value
     }));
+    if (errors.name) setErrors(prev => ({ ...prev, name: '' }));
   };
 
-  // Skills — handled by SkillsSelector component
+  // Inline validation on blur
+  const validateField = (field, value) => {
+    let err = '';
+    switch (field) {
+      case 'phone':
+        if (value && !/^[0-9]{10}$/.test(value)) err = `Phone must be exactly 10 digits (currently ${(value || '').length} digits)`;
+        break;
+      case 'dob':
+        if (value && new Date(value) > new Date()) err = 'Date of birth cannot be in the future';
+        break;
+      case 'address':
+        if (value && value.length < 5) err = 'Address must be at least 5 characters';
+        break;
+      case 'cgpa':
+        if (value !== '' && value !== undefined && (value < 0 || value > 10)) err = 'CGPA must be between 0 and 10';
+        break;
+      case 'tenthPercentage':
+      case 'twelfthPercentage':
+        if (value !== '' && value !== undefined && (value < 0 || value > 100)) err = 'Percentage must be between 0 and 100';
+        break;
+      case 'passingYear':
+        if (value !== '' && value !== undefined && (value < 2020 || value > 2030)) err = 'Must be between 2020 and 2030';
+        break;
+      case 'currentSemester':
+        if (value !== '' && value !== undefined && (value < 1 || value > 8)) err = 'Must be between 1 and 8';
+        break;
+      case 'enrollmentNo':
+        if (!value || !value.trim()) err = 'Enrollment number is required';
+        else if (!/^\d{13}$/.test(value)) err = `Enrollment number must be exactly 13 digits (currently ${(value || '').length} digits)`;
+        break;
+    }
+    setErrors(prev => ({ ...prev, [field]: err }));
+    return err;
+  };
+
+  const handleBlur = (field) => {
+    validateField(field, profile[field]);
+  };
 
   // Projects
   const addProject = () => {
@@ -92,8 +129,30 @@ const StudentProfile = () => {
     } finally { setUploading(false); }
   };
 
+  // Validate all before save
+  const validateAll = () => {
+    const newErrors = {};
+    if (profile.phone && !/^[0-9]{10}$/.test(profile.phone)) newErrors.phone = `Phone must be exactly 10 digits (currently ${(profile.phone || '').length} digits)`;
+    if (profile.dob && new Date(profile.dob) > new Date()) newErrors.dob = 'Date of birth cannot be in the future';
+    if (profile.address && profile.address.length < 5) newErrors.address = 'Address must be at least 5 characters';
+    if (!profile.academicVerified) {
+      if (profile.enrollmentNo && !/^\d{13}$/.test(profile.enrollmentNo)) newErrors.enrollmentNo = `Enrollment number must be exactly 13 digits (currently ${(profile.enrollmentNo || '').length} digits)`;
+      if (profile.cgpa !== undefined && profile.cgpa !== '' && (profile.cgpa < 0 || profile.cgpa > 10)) newErrors.cgpa = 'CGPA must be between 0 and 10';
+      if (profile.tenthPercentage !== undefined && profile.tenthPercentage !== '' && (profile.tenthPercentage < 0 || profile.tenthPercentage > 100)) newErrors.tenthPercentage = 'Percentage must be between 0 and 100';
+      if (profile.twelfthPercentage !== undefined && profile.twelfthPercentage !== '' && (profile.twelfthPercentage < 0 || profile.twelfthPercentage > 100)) newErrors.twelfthPercentage = 'Percentage must be between 0 and 100';
+      if (profile.passingYear !== undefined && profile.passingYear !== '' && (profile.passingYear < 2020 || profile.passingYear > 2030)) newErrors.passingYear = 'Must be between 2020 and 2030';
+      if (profile.currentSemester !== undefined && profile.currentSemester !== '' && (profile.currentSemester < 1 || profile.currentSemester > 8)) newErrors.currentSemester = 'Must be between 1 and 8';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   // Save profile
   const handleSave = async () => {
+    if (!validateAll()) {
+      setMessage({ type: 'error', text: 'Please fix the errors before saving' });
+      return;
+    }
     setSaving(true);
     setMessage({ type: '', text: '' });
     try {
@@ -116,6 +175,7 @@ const StudentProfile = () => {
         payload.enrollmentNo = profile.enrollmentNo;
         payload.branch = profile.branch;
         payload.passingYear = profile.passingYear;
+        payload.currentSemester = profile.currentSemester;
         payload.cgpa = profile.cgpa;
         payload.tenthPercentage = profile.tenthPercentage;
         payload.twelfthPercentage = profile.twelfthPercentage;
@@ -135,8 +195,12 @@ const StudentProfile = () => {
   if (!profile) return <p className="text-center text-slate-500 mt-10">Profile not found.</p>;
 
   const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition text-sm";
+  const inputErr = "w-full px-4 py-2.5 rounded-xl border border-red-300 focus:ring-2 focus:ring-red-500/20 focus:border-red-400 outline-none transition text-sm";
   const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
   const readOnly = "w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-100 text-sm text-slate-500 cursor-not-allowed";
+  const errText = "text-xs text-red-500 mt-1";
+
+  const getInputClass = (field) => errors[field] ? inputErr : inputClass;
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -157,21 +221,36 @@ const StudentProfile = () => {
         <div className="bg-white rounded-2xl p-6 border border-slate-100">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">Personal Information</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div><label className={labelClass}>Name</label><input type="text" value={(profile._userName ?? profile.user?.name) || ''} onChange={(e) => handleNameChange(e.target.value)} className={inputClass} /></div>
+            <div>
+              <label className={labelClass}>Name</label>
+              <input type="text" value={(profile._userName ?? profile.user?.name) || ''} onChange={(e) => handleNameChange(e.target.value)} className={inputClass} />
+            </div>
             <div><label className={labelClass}>Email</label><input type="email" value={profile.user?.email || ''} readOnly className={readOnly} /></div>
-            <div><label className={labelClass}>Phone</label><input type="text" value={profile.phone || ''} onChange={(e) => handleChange('phone', e.target.value)} className={inputClass} /></div>
+            <div>
+              <label className={labelClass}>Phone</label>
+              <input type="tel" maxLength={10} value={profile.phone || ''} onChange={(e) => { const val = e.target.value.replace(/\D/g, ''); if (val.length <= 10) handleChange('phone', val); }} onBlur={() => handleBlur('phone')} className={getInputClass('phone')} placeholder="10-digit number" />
+              {errors.phone && <p className={errText}>{errors.phone}</p>}
+            </div>
             <div>
               <label className={labelClass}>Gender</label>
               <select value={profile.gender || ''} onChange={(e) => handleChange('gender', e.target.value)} className={inputClass}>
                 <option value="">Select</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
               </select>
             </div>
-            <div><label className={labelClass}>Date of Birth</label><input type="date" value={profile.dob ? profile.dob.substring(0, 10) : ''} onChange={(e) => handleChange('dob', e.target.value)} className={inputClass} /></div>
-            <div className="sm:col-span-2"><label className={labelClass}>Address</label><textarea value={profile.address || ''} onChange={(e) => handleChange('address', e.target.value)} className={inputClass} rows="2" /></div>
+            <div>
+              <label className={labelClass}>Date of Birth</label>
+              <input type="date" value={profile.dob ? profile.dob.substring(0, 10) : ''} onChange={(e) => handleChange('dob', e.target.value)} onBlur={() => handleBlur('dob')} className={getInputClass('dob')} />
+              {errors.dob && <p className={errText}>{errors.dob}</p>}
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelClass}>Address</label>
+              <textarea value={profile.address || ''} onChange={(e) => handleChange('address', e.target.value)} onBlur={() => handleBlur('address')} className={getInputClass('address')} rows="2" />
+              {errors.address && <p className={errText}>{errors.address}</p>}
+            </div>
           </div>
         </div>
 
-        {/* Academic Records — 3-state: editable/pending/verified */}
+        {/* Academic Records */}
         <div className="bg-white rounded-2xl p-6 border border-slate-100">
           <h2 className="text-lg font-semibold text-slate-800 mb-1">Academic Records</h2>
 
@@ -195,7 +274,8 @@ const StudentProfile = () => {
               <label className={labelClass}>Enrollment No</label>
               {profile.academicVerified
                 ? <input value={profile.enrollmentNo || '—'} readOnly className={readOnly} />
-                : <input type="text" value={profile.enrollmentNo || ''} onChange={(e) => handleChange('enrollmentNo', e.target.value)} className={inputClass} placeholder="e.g. EN20CS1234" />}
+                : <input type="text" maxLength={13} value={profile.enrollmentNo || ''} onChange={(e) => { const val = e.target.value.replace(/\D/g, ''); if (val.length <= 13) handleChange('enrollmentNo', val); }} onBlur={() => handleBlur('enrollmentNo')} className={getInputClass('enrollmentNo')} placeholder="13-digit number" />}
+              {errors.enrollmentNo && <p className={errText}>{errors.enrollmentNo}</p>}
             </div>
             <div>
               <label className={labelClass}>Branch</label>
@@ -211,25 +291,36 @@ const StudentProfile = () => {
               <label className={labelClass}>Passing Year</label>
               {profile.academicVerified
                 ? <input value={profile.passingYear || '—'} readOnly className={readOnly} />
-                : <input type="number" min="2020" max="2030" value={profile.passingYear || ''} onChange={(e) => handleChange('passingYear', parseInt(e.target.value) || '')} className={inputClass} />}
+                : <input type="number" min="2020" max="2030" value={profile.passingYear || ''} onChange={(e) => handleChange('passingYear', parseInt(e.target.value) || '')} onBlur={() => handleBlur('passingYear')} className={getInputClass('passingYear')} />}
+              {errors.passingYear && <p className={errText}>{errors.passingYear}</p>}
+            </div>
+            <div>
+              <label className={labelClass}>Current Semester</label>
+              {profile.academicVerified
+                ? <input value={profile.currentSemester || '—'} readOnly className={readOnly} />
+                : <input type="number" min="1" max="8" value={profile.currentSemester || ''} onChange={(e) => handleChange('currentSemester', parseInt(e.target.value) || '')} onBlur={() => handleBlur('currentSemester')} className={getInputClass('currentSemester')} placeholder="e.g. 6" />}
+              {errors.currentSemester && <p className={errText}>{errors.currentSemester}</p>}
             </div>
             <div>
               <label className={labelClass}>CGPA</label>
               {profile.academicVerified
                 ? <input value={profile.cgpa ?? '—'} readOnly className={readOnly} />
-                : <input type="number" step="0.01" min="0" max="10" value={profile.cgpa ?? ''} onChange={(e) => handleChange('cgpa', parseFloat(e.target.value) || '')} className={inputClass} />}
+                : <input type="number" step="0.01" min="0" max="10" value={profile.cgpa ?? ''} onChange={(e) => handleChange('cgpa', parseFloat(e.target.value) || '')} onBlur={() => handleBlur('cgpa')} className={getInputClass('cgpa')} />}
+              {errors.cgpa && <p className={errText}>{errors.cgpa}</p>}
             </div>
             <div>
               <label className={labelClass}>10th %</label>
               {profile.academicVerified
                 ? <input value={profile.tenthPercentage ?? '—'} readOnly className={readOnly} />
-                : <input type="number" step="0.01" min="0" max="100" value={profile.tenthPercentage ?? ''} onChange={(e) => handleChange('tenthPercentage', parseFloat(e.target.value) || '')} className={inputClass} />}
+                : <input type="number" step="0.01" min="0" max="100" value={profile.tenthPercentage ?? ''} onChange={(e) => handleChange('tenthPercentage', parseFloat(e.target.value) || '')} onBlur={() => handleBlur('tenthPercentage')} className={getInputClass('tenthPercentage')} />}
+              {errors.tenthPercentage && <p className={errText}>{errors.tenthPercentage}</p>}
             </div>
             <div>
               <label className={labelClass}>12th %</label>
               {profile.academicVerified
                 ? <input value={profile.twelfthPercentage ?? '—'} readOnly className={readOnly} />
-                : <input type="number" step="0.01" min="0" max="100" value={profile.twelfthPercentage ?? ''} onChange={(e) => handleChange('twelfthPercentage', parseFloat(e.target.value) || '')} className={inputClass} />}
+                : <input type="number" step="0.01" min="0" max="100" value={profile.twelfthPercentage ?? ''} onChange={(e) => handleChange('twelfthPercentage', parseFloat(e.target.value) || '')} onBlur={() => handleBlur('twelfthPercentage')} className={getInputClass('twelfthPercentage')} />}
+              {errors.twelfthPercentage && <p className={errText}>{errors.twelfthPercentage}</p>}
             </div>
             <div>
               <label className={labelClass}>Active Backlogs</label>

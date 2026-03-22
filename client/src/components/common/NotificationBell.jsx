@@ -1,15 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, Briefcase, FileText, Calendar, Trophy, Megaphone, Shield, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+
+const typeConfig = {
+  job_posted: { icon: Briefcase, color: 'bg-blue-100 text-blue-600', label: 'Job' },
+  application_update: { icon: FileText, color: 'bg-purple-100 text-purple-600', label: 'Application' },
+  interview_scheduled: { icon: Calendar, color: 'bg-orange-100 text-orange-600', label: 'Interview' },
+  offer_received: { icon: Trophy, color: 'bg-green-100 text-green-600', label: 'Offer' },
+  announcement: { icon: Megaphone, color: 'bg-slate-100 text-slate-600', label: 'Announcement' },
+  security: { icon: Shield, color: 'bg-red-100 text-red-600', label: 'Security' },
+};
 
 const NotificationBell = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const dropdownRef = useRef(null);
+  const modalRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,58 +27,50 @@ const NotificationBell = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Close on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+      if (modalRef.current && !modalRef.current.contains(e.target)) {
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  // Close on Escape
+  useEffect(() => {
+    const handleEsc = (e) => { if (e.key === 'Escape') setIsOpen(false); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
   }, []);
 
   const fetchUnreadCount = async () => {
     try {
       const res = await api.get('/notifications/unread-count');
-      if (res.data.success) {
-        setUnreadCount(res.data.data.count);
-      }
-    } catch {
-      // ignore
-    }
+      if (res.data.success) setUnreadCount(res.data.data.count);
+    } catch { /* ignore */ }
   };
 
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/notifications?limit=10');
-      if (res.data.success) {
-        setNotifications(res.data.data.notifications);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
+      const res = await api.get('/notifications?limit=20');
+      if (res.data.success) setNotifications(res.data.data.notifications);
+    } catch { /* ignore */ } finally { setLoading(false); }
   };
 
-  const toggleDropdown = () => {
-    if (!isOpen) {
-      fetchNotifications();
-    }
+  const toggleModal = () => {
+    if (!isOpen) fetchNotifications();
     setIsOpen(!isOpen);
   };
 
   const markAsRead = async (id) => {
     try {
       await api.put(`/notifications/${id}/read`);
-      setNotifications(prev =>
-        prev.map(n => n._id === id ? { ...n, isRead: true } : n)
-      );
+      setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
   };
 
   const markAllRead = async () => {
@@ -77,9 +78,7 @@ const NotificationBell = () => {
       await api.put('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
   };
 
   const handleClick = (notification) => {
@@ -99,19 +98,11 @@ const NotificationBell = () => {
     return `${days}d ago`;
   };
 
-  const typeColors = {
-    job_posted: 'bg-blue-100 text-blue-600',
-    application_update: 'bg-amber-100 text-amber-600',
-    interview_scheduled: 'bg-purple-100 text-purple-600',
-    offer_received: 'bg-green-100 text-green-600',
-    announcement: 'bg-indigo-100 text-indigo-600',
-    security: 'bg-red-100 text-red-600'
-  };
-
   return (
-    <div className="relative" ref={dropdownRef}>
+    <>
+      {/* Bell Button */}
       <button
-        onClick={toggleDropdown}
+        onClick={toggleModal}
         className="relative p-2 rounded-xl hover:bg-slate-100 transition-colors"
         id="notification-bell"
       >
@@ -127,67 +118,99 @@ const NotificationBell = () => {
         )}
       </button>
 
+      {/* Modal Overlay + Panel */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 overflow-hidden"
-          >
-            <div className="flex items-center justify-between p-4 border-b border-slate-100">
-              <h3 className="font-semibold text-slate-800">Notifications</h3>
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllRead}
-                  className="text-xs text-primary-600 hover:text-primary-700 font-medium"
-                >
-                  Mark all read
-                </button>
-              )}
-            </div>
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-slate-900/30 z-40"
+              onClick={() => setIsOpen(false)}
+            />
 
-            <div className="max-h-80 overflow-y-auto">
-              {loading ? (
-                <div className="p-6 text-center text-slate-400">Loading...</div>
-              ) : notifications.length === 0 ? (
-                <div className="p-6 text-center text-slate-400">
-                  <Bell className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-sm">No notifications</p>
-                </div>
-              ) : (
-                notifications.map((n) => (
-                  <button
-                    key={n._id}
-                    onClick={() => handleClick(n)}
-                    className={`w-full text-left p-3 hover:bg-slate-50 transition-colors border-b border-slate-50 ${
-                      !n.isRead ? 'bg-primary-50/50' : ''
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className={`mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold ${typeColors[n.type] || 'bg-slate-100 text-slate-600'}`}>
-                        {n.type?.replace('_', ' ')}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm ${!n.isRead ? 'font-semibold text-slate-800' : 'text-slate-600'}`}>
-                          {n.title}
-                        </p>
-                        <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{n.message}</p>
-                        <p className="text-[10px] text-slate-300 mt-1">{getTimeAgo(n.createdAt)}</p>
-                      </div>
-                      {!n.isRead && (
-                        <span className="w-2 h-2 rounded-full bg-primary-500 mt-1.5 flex-shrink-0"></span>
-                      )}
-                    </div>
+            {/* Panel */}
+            <motion.div
+              ref={modalRef}
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="fixed top-16 right-4 w-[380px] max-h-[80vh] bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 flex flex-col overflow-hidden"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-slate-100 flex-shrink-0">
+                <h3 className="font-bold text-slate-800 text-lg">Notifications</h3>
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <button onClick={markAllRead} className="text-xs text-primary-600 hover:text-primary-700 font-medium">
+                      Mark all as read
+                    </button>
+                  )}
+                  <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 transition">
+                    <X className="w-4 h-4 text-slate-400" />
                   </button>
-                ))
-              )}
-            </div>
-          </motion.div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="overflow-y-auto flex-1">
+                {loading ? (
+                  <div className="space-y-3 p-4">
+                    {[1,2,3].map(i => (
+                      <div key={i} className="animate-pulse flex gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-slate-100 flex-shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-3 bg-slate-100 rounded w-3/4" />
+                          <div className="h-2 bg-slate-100 rounded w-full" />
+                          <div className="h-2 bg-slate-50 rounded w-1/4" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="p-10 text-center text-slate-400">
+                    <Bell className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                    <p className="font-medium">No notifications yet</p>
+                    <p className="text-xs mt-1">We'll notify you when something happens</p>
+                  </div>
+                ) : (
+                  notifications.map((n) => {
+                    const config = typeConfig[n.type] || typeConfig.announcement;
+                    const Icon = config.icon;
+                    return (
+                      <button
+                        key={n._id}
+                        onClick={() => handleClick(n)}
+                        className={`w-full text-left p-4 hover:bg-slate-50 transition-colors border-b border-slate-50 flex items-start gap-3 ${
+                          !n.isRead ? 'bg-primary-50/40 border-l-[3px] border-l-primary-500' : 'border-l-[3px] border-l-transparent'
+                        }`}
+                      >
+                        <div className={`w-9 h-9 rounded-xl ${config.color} flex items-center justify-center flex-shrink-0`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm leading-snug ${!n.isRead ? 'font-semibold text-slate-800' : 'text-slate-600'}`}>
+                            {n.title}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{n.message}</p>
+                          <p className="text-[10px] text-slate-300 mt-1.5">{getTimeAgo(n.createdAt)}</p>
+                        </div>
+                        {!n.isRead && (
+                          <span className="w-2 h-2 rounded-full bg-primary-500 mt-2 flex-shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 };
 

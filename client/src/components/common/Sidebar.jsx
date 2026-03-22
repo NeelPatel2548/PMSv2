@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   LayoutDashboard, User, Briefcase, FileText, Calendar,
   Building2, PlusCircle, Users, ClipboardList,
-  Shield, BarChart3, Megaphone, Settings
+  Shield, BarChart3, Megaphone, Settings, Bell
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -17,6 +17,7 @@ const Sidebar = () => {
     { to: '/student/jobs', icon: Briefcase, label: 'Jobs' },
     { to: '/student/applications', icon: FileText, label: 'Applications' },
     { to: '/student/interviews', icon: Calendar, label: 'Interviews' },
+    { to: '#notifications', icon: Bell, label: 'Notifications', isNotification: true },
   ];
 
   const companyLinks = [
@@ -24,6 +25,7 @@ const Sidebar = () => {
     { to: '/company/profile', icon: Building2, label: 'Profile' },
     { to: '/company/post-job', icon: PlusCircle, label: 'Post Job' },
     { to: '/company/jobs', icon: Briefcase, label: 'My Jobs' },
+    { to: '#notifications', icon: Bell, label: 'Notifications', isNotification: true },
   ];
 
   const adminLinks = [
@@ -32,6 +34,7 @@ const Sidebar = () => {
     { to: '/admin/companies', icon: Building2, label: 'Companies' },
     { to: '/admin/jobs', icon: Briefcase, label: 'Jobs' },
     { to: '/admin/reports', icon: BarChart3, label: 'Reports' },
+    { to: '#notifications', icon: Bell, label: 'Notifications', isNotification: true },
   ];
 
   const links = user?.role === 'student' ? studentLinks
@@ -60,6 +63,23 @@ const Sidebar = () => {
       <nav className="flex-1 px-3 py-2 space-y-1">
         {links.map((link) => {
           const isActive = location.pathname === link.to;
+
+          // Notifications link => trigger the bell
+          if (link.isNotification) {
+            return (
+              <button
+                key="notifications-sidebar"
+                onClick={() => document.getElementById('notification-bell')?.click()}
+                className="relative block w-full text-left"
+              >
+                <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-slate-600 hover:bg-slate-50 hover:text-slate-800">
+                  <link.icon className="w-5 h-5 flex-shrink-0" />
+                  <span>{link.label}</span>
+                </div>
+              </button>
+            );
+          }
+
           return (
             <NavLink
               key={link.to}

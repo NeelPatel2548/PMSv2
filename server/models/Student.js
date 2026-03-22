@@ -65,7 +65,12 @@ const studentSchema = new mongoose.Schema({
   skills: [{
     type: String,
     trim: true,
-    enum: SKILLS_LIST
+    validate: {
+      validator: function(skill) {
+        return SKILLS_LIST.includes(skill);
+      },
+      message: props => `"${props.value}" is not a valid skill. Must be one of the predefined skills list.`
+    }
   }],
   projects: [{
     title: { type: String },

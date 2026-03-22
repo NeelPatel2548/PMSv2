@@ -24,6 +24,8 @@ const ApplicantList = () => {
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
 
   // Interview form state
   const [interviewFor, setInterviewFor] = useState(null);
@@ -37,14 +39,18 @@ const ApplicantList = () => {
       try {
         const [jobRes, appRes] = await Promise.all([
           api.get(`/company/jobs/${jobId}`),
-          api.get(`/company/jobs/${jobId}/applicants`)
+          api.get(`/company/jobs/${jobId}/applicants?page=${page}&limit=20`)
         ]);
         if (jobRes.data.success) setJob(jobRes.data.data);
-        if (appRes.data.success) setApplicants(appRes.data.data);
+        if (appRes.data.success) {
+          const data = appRes.data.data;
+          setApplicants(data.results || data);
+          if (data.pagination) setPagination(data.pagination);
+        }
       } catch { /* ignore */ } finally { setLoading(false); }
     };
     fetchData();
-  }, [jobId]);
+  }, [jobId, page]);
 
   const updateStatus = async (appId, status) => {
     if (status === 'selected') {
@@ -278,6 +284,21 @@ const ApplicantList = () => {
               )}
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {pagination && (
+        <div className="flex items-center justify-between bg-white rounded-2xl p-4 border border-slate-100">
+          <p className="text-sm text-slate-500">
+            Showing {((pagination.page - 1) * pagination.limit) + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+          </p>
+          <div className="flex gap-2">
+            <button disabled={!pagination.hasPrevPage} onClick={() => setPage(p => p - 1)}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium disabled:opacity-40 hover:bg-slate-50 transition">Prev</button>
+            <button disabled={!pagination.hasNextPage} onClick={() => setPage(p => p + 1)}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium disabled:opacity-40 hover:bg-slate-50 transition">Next</button>
+          </div>
         </div>
       )}
     </div>

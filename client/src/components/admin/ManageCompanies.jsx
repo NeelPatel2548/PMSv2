@@ -8,6 +8,8 @@ const ManageCompanies = () => {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ isApproved: '', tier: '', search: '' });
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
 
   const fetchCompanies = async () => {
     setLoading(true);
@@ -16,12 +18,18 @@ const ManageCompanies = () => {
       if (filters.isApproved !== '') params.append('isApproved', filters.isApproved);
       if (filters.tier) params.append('tier', filters.tier);
       if (filters.search) params.append('search', filters.search);
+      params.set('page', page);
+      params.set('limit', 10);
       const res = await api.get(`/admin/companies?${params}`);
-      if (res.data.success) setCompanies(res.data.data);
+      if (res.data.success) {
+        const data = res.data.data;
+        setCompanies(data.results || data);
+        if (data.pagination) setPagination(data.pagination);
+      }
     } catch { /* ignore */ } finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchCompanies(); }, [filters.isApproved, filters.tier]);
+  useEffect(() => { fetchCompanies(); }, [filters.isApproved, filters.tier, page]);
 
   const handleSearch = (e) => { e.preventDefault(); fetchCompanies(); };
 
@@ -114,6 +122,21 @@ const ManageCompanies = () => {
               </div>
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {pagination && (
+        <div className="flex items-center justify-between bg-white rounded-2xl p-4 border border-slate-100">
+          <p className="text-sm text-slate-500">
+            Showing {((pagination.page - 1) * pagination.limit) + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+          </p>
+          <div className="flex gap-2">
+            <button disabled={!pagination.hasPrevPage} onClick={() => setPage(p => p - 1)}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium disabled:opacity-40 hover:bg-slate-50 transition">Prev</button>
+            <button disabled={!pagination.hasNextPage} onClick={() => setPage(p => p + 1)}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium disabled:opacity-40 hover:bg-slate-50 transition">Next</button>
+          </div>
         </div>
       )}
     </div>

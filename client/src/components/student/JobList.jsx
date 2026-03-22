@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Briefcase } from 'lucide-react';
+import { Search, Briefcase, Target } from 'lucide-react';
 import api from '../../services/api';
 import Loader from '../common/Loader';
 import JobCard from './JobCard';
@@ -11,15 +11,20 @@ const JobList = () => {
   const [applying, setApplying] = useState(null);
   const [search, setSearch] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [studentProfile, setStudentProfile] = useState(null);
 
   useEffect(() => {
-    const fetchJobs = async () => {
+    const fetchAll = async () => {
       try {
-        const res = await api.get('/student/jobs');
-        if (res.data.success) setJobs(res.data.data);
+        const [jobsRes, profileRes] = await Promise.all([
+          api.get('/student/jobs'),
+          api.get('/student/profile')
+        ]);
+        if (jobsRes.data.success) setJobs(jobsRes.data.data);
+        if (profileRes.data.success) setStudentProfile(profileRes.data.data);
       } catch { /* ignore */ } finally { setLoading(false); }
     };
-    fetchJobs();
+    fetchAll();
   }, []);
 
   const handleApply = async (jobId) => {
@@ -47,7 +52,12 @@ const JobList = () => {
     <div className="max-w-4xl mx-auto">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-bold text-slate-800 mb-1">Eligible Jobs</h1>
-        <p className="text-slate-500 text-sm mb-6">Jobs matching your CGPA, branch, and backlog criteria</p>
+        <p className="text-slate-500 text-sm mb-2">Jobs matching your CGPA, branch, and backlog criteria</p>
+        {/* Feature 3: Sort note */}
+        <div className="flex items-center gap-1.5 mb-6 text-xs text-primary-600 bg-primary-50 px-3 py-2 rounded-xl border border-primary-100 w-fit">
+          <Target className="w-3.5 h-3.5" />
+          Jobs are sorted by skill match. Strong matches appear first.
+        </div>
       </motion.div>
 
       {message.text && (
@@ -77,7 +87,7 @@ const JobList = () => {
       ) : (
         <div className="space-y-4">
           {filtered.map(job => (
-            <JobCard key={job._id} job={job} onApply={handleApply} applying={applying === job._id} />
+            <JobCard key={job._id} job={job} onApply={handleApply} applying={applying === job._id} studentProfile={studentProfile} />
           ))}
         </div>
       )}

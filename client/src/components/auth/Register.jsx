@@ -12,20 +12,33 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     setError('');
+    if (fieldErrors[e.target.name]) setFieldErrors(prev => ({ ...prev, [e.target.name]: '' }));
+  };
+
+  const validateField = (name, value) => {
+    let err = '';
+    if (name === 'name' && value.length < 2) err = 'Name must be at least 2 characters';
+    if (name === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) err = 'Please enter a valid email address';
+    if (name === 'password' && value && value.length < 6) err = 'Password must be at least 6 characters';
+    if (name === 'confirmPassword' && value !== formData.password) err = 'Passwords do not match';
+    setFieldErrors(prev => ({ ...prev, [name]: err }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      return setError('Passwords do not match');
-    }
-    if (formData.password.length < 6) {
-      return setError('Password must be at least 6 characters');
-    }
+    // Validate all fields
+    const errs = {};
+    if (formData.name.length < 2) errs.name = 'Name must be at least 2 characters';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errs.email = 'Please enter a valid email address';
+    if (formData.password.length < 6) errs.password = 'Password must be at least 6 characters';
+    if (formData.password !== formData.confirmPassword) errs.confirmPassword = 'Passwords do not match';
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
 
     setLoading(true);
     setError('');
@@ -46,6 +59,11 @@ const Register = () => {
       setLoading(false);
     }
   };
+
+  const inputBase = "w-full pl-10 pr-4 py-3 rounded-xl border focus:ring-2 outline-none transition text-sm";
+  const inputOk = `${inputBase} border-slate-200 focus:ring-primary-500/20 focus:border-primary-500`;
+  const inputBad = `${inputBase} border-red-300 focus:ring-red-500/20 focus:border-red-400`;
+  const errText = "text-xs text-red-500 mt-1";
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -79,16 +97,13 @@ const Register = () => {
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition text-sm"
-                  placeholder="John Doe"
-                  id="register-name"
+                  type="text" name="name" value={formData.name} onChange={handleChange}
+                  onBlur={() => validateField('name', formData.name)}
+                  required className={fieldErrors.name ? inputBad : inputOk}
+                  placeholder="John Doe" id="register-name"
                 />
               </div>
+              {fieldErrors.name && <p className={errText}>{fieldErrors.name}</p>}
             </div>
 
             <div>
@@ -96,24 +111,19 @@ const Register = () => {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition text-sm"
-                  placeholder="you@example.com"
-                  id="register-email"
+                  type="email" name="email" value={formData.email} onChange={handleChange}
+                  onBlur={() => validateField('email', formData.email)}
+                  required className={fieldErrors.email ? inputBad : inputOk}
+                  placeholder="you@example.com" id="register-email"
                 />
               </div>
+              {fieldErrors.email && <p className={errText}>{fieldErrors.email}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Role</label>
               <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
+                name="role" value={formData.role} onChange={handleChange}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition text-sm bg-white"
                 id="register-role"
               >
@@ -127,24 +137,18 @@ const Register = () => {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  minLength={6}
-                  className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition text-sm"
-                  placeholder="Min. 6 characters"
-                  id="register-password"
+                  type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange}
+                  onBlur={() => validateField('password', formData.password)}
+                  required minLength={6}
+                  className={`${fieldErrors.password ? inputBad : inputOk} pr-12`}
+                  placeholder="Min. 6 characters" id="register-password"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
+                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {fieldErrors.password && <p className={errText}>{fieldErrors.password}</p>}
             </div>
 
             <div>
@@ -152,21 +156,18 @@ const Register = () => {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
+                  type={showPassword ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword} onChange={handleChange}
+                  onBlur={() => validateField('confirmPassword', formData.confirmPassword)}
                   required
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition text-sm"
-                  placeholder="Re-enter password"
-                  id="register-confirm-password"
+                  className={fieldErrors.confirmPassword ? inputBad : inputOk}
+                  placeholder="Re-enter password" id="register-confirm-password"
                 />
               </div>
+              {fieldErrors.confirmPassword && <p className={errText}>{fieldErrors.confirmPassword}</p>}
             </div>
 
             <button
-              type="submit"
-              disabled={loading}
+              type="submit" disabled={loading}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold hover:from-emerald-600 hover:to-teal-700 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
               id="register-submit"
             >

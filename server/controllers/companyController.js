@@ -284,15 +284,33 @@ exports.getApplicants = async (req, res) => {
       return error(res, 'Job not found', 404);
     }
 
-    const applications = await Application.find({ job: job._id })
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const query = { job: job._id };
+    const total = await Application.countDocuments(query);
+    const results = await Application.find(query)
       .populate({
         path: 'student',
-        select: 'enrollmentNo branch cgpa phone skills resumeUrl activeBacklogs placementStatus',
+        select: 'enrollmentNo branch cgpa phone skills resumeUrl activeBacklogs placementStatus passingYear',
         populate: { path: 'user', select: 'name email profileImageUrl' }
       })
+      .skip(skip)
+      .limit(limit)
       .sort({ createdAt: -1 });
 
-    return success(res, applications, 'Applicants fetched');
+    return success(res, {
+      results,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPrevPage: page > 1
+      }
+    }, 'Applicants fetched');
   } catch (err) {
     console.error('Get applicants error:', err);
     return error(res, 'Failed to fetch applicants', 500);
