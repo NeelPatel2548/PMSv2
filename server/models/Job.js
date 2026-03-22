@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { SKILLS_LIST } = require('../utils/constants');
 
 const jobSchema = new mongoose.Schema({
   company: {
@@ -15,7 +16,8 @@ const jobSchema = new mongoose.Schema({
     type: String
   },
   requiredSkills: [{
-    type: String
+    type: String,
+    enum: SKILLS_LIST
   }],
   package: {
     type: String

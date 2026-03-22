@@ -2,6 +2,7 @@ const Student = require('../models/Student');
 const Company = require('../models/Company');
 const Job = require('../models/Job');
 const Application = require('../models/Application');
+const { SKILLS_LIST } = require('../utils/constants');
 const { success, error } = require('../utils/apiResponse');
 
 // @desc    Get public placement stats (for landing page)
@@ -60,4 +61,11 @@ exports.getPublicJobs = async (req, res) => {
     console.error('Public jobs error:', err);
     return error(res, 'Failed to fetch jobs', 500);
   }
+};
+
+// @desc    Get predefined skills list
+// @route   GET /api/public/skills
+// @access  Public
+exports.getSkills = (req, res) => {
+  return success(res, SKILLS_LIST, 'Skills list fetched');
 };

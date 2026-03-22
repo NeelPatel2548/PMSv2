@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, X, PlusCircle } from 'lucide-react';
 import api from '../../services/api';
 import Loader from '../common/Loader';
+import SkillsSelector from '../common/SkillsSelector';
 
 const EditJob = () => {
   const { id } = useParams();
@@ -12,8 +13,6 @@ const EditJob = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  
-  const [skillInput, setSkillInput] = useState('');
 
   const branches = ['CSE', 'IT', 'ECE', 'EE', 'ME', 'CE', 'Other'];
 
@@ -50,16 +49,6 @@ const EditJob = () => {
     } else {
       setFormData({ ...formData, eligibleBranches: [...current, branch] });
     }
-  };
-
-  const addSkill = () => {
-    if (skillInput.trim() && !formData.requiredSkills?.includes(skillInput.trim())) {
-      setFormData({ ...formData, requiredSkills: [...(formData.requiredSkills || []), skillInput.trim()] });
-      setSkillInput('');
-    }
-  };
-  const removeSkill = (index) => {
-    setFormData({ ...formData, requiredSkills: formData.requiredSkills.filter((_, i) => i !== index) });
   };
 
   const handleSubmit = async (e) => {
@@ -183,18 +172,11 @@ const EditJob = () => {
 
           <div className="mb-5">
             <label className={labelClass}>Required Skills</label>
-            <div className="flex gap-2 mb-3">
-              <input type="text" value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())} className={inputClass} placeholder="Add a skill and press Enter" />
-              <button type="button" onClick={addSkill} className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm hover:bg-primary-700 transition"><PlusCircle className="w-4 h-4" /></button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {(formData.requiredSkills || []).map((skill, i) => (
-                <span key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-50 text-primary-700 text-sm border border-primary-100">
-                  {skill}
-                  <button type="button" onClick={() => removeSkill(i)}><X className="w-3 h-3 text-primary-400 hover:text-red-500" /></button>
-                </span>
-              ))}
-            </div>
+            <SkillsSelector
+              selected={formData.requiredSkills || []}
+              onChange={(skills) => setFormData({ ...formData, requiredSkills: skills })}
+              maxSkills={8}
+            />
           </div>
 
           <div>

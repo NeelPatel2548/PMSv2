@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Save, PlusCircle, X, Upload, Linkedin, Github, CheckCircle } from 'lucide-react';
 import api from '../../services/api';
 import Loader from '../common/Loader';
+import SkillsSelector from '../common/SkillsSelector';
 
 const StudentProfile = () => {
   const [profile, setProfile] = useState(null);
@@ -11,8 +12,7 @@ const StudentProfile = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [uploading, setUploading] = useState(false);
 
-  // Tag inputs
-  const [skillInput, setSkillInput] = useState('');
+  // Tag inputs (skill input removed — using SkillsSelector now)
 
   // Project form
   const [projectForm, setProjectForm] = useState({ title: '', description: '', link: '' });
@@ -42,16 +42,7 @@ const StudentProfile = () => {
     }));
   };
 
-  // Skills
-  const addSkill = () => {
-    if (skillInput.trim() && !profile.skills?.includes(skillInput.trim())) {
-      handleChange('skills', [...(profile.skills || []), skillInput.trim()]);
-      setSkillInput('');
-    }
-  };
-  const removeSkill = (i) => {
-    handleChange('skills', profile.skills.filter((_, idx) => idx !== i));
-  };
+  // Skills — handled by SkillsSelector component
 
   // Projects
   const addProject = () => {
@@ -119,6 +110,17 @@ const StudentProfile = () => {
         certifications: profile.certifications || [],
         internshipExperience: profile.internshipExperience
       };
+
+      // Include academic fields only when not verified
+      if (!profile.academicVerified) {
+        payload.enrollmentNo = profile.enrollmentNo;
+        payload.branch = profile.branch;
+        payload.passingYear = profile.passingYear;
+        payload.cgpa = profile.cgpa;
+        payload.tenthPercentage = profile.tenthPercentage;
+        payload.twelfthPercentage = profile.twelfthPercentage;
+        payload.activeBacklogs = profile.activeBacklogs;
+      }
       const res = await api.put('/student/profile', payload);
       if (res.data.success) {
         setProfile(res.data.data);
@@ -262,18 +264,11 @@ const StudentProfile = () => {
         {/* Skills */}
         <div className="bg-white rounded-2xl p-6 border border-slate-100">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">Skills</h2>
-          <div className="flex gap-2 mb-3">
-            <input type="text" value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())} className={inputClass} placeholder="Add a skill and press Enter" />
-            <button type="button" onClick={addSkill} className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm hover:bg-primary-700 transition"><PlusCircle className="w-4 h-4" /></button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {(profile.skills || []).map((skill, i) => (
-              <span key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-50 text-primary-700 text-sm border border-primary-100">
-                {skill}
-                <button onClick={() => removeSkill(i)}><X className="w-3 h-3 text-primary-400 hover:text-red-500" /></button>
-              </span>
-            ))}
-          </div>
+          <SkillsSelector
+            selected={profile.skills || []}
+            onChange={(skills) => handleChange('skills', skills)}
+            maxSkills={10}
+          />
         </div>
 
         {/* Projects */}

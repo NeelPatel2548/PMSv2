@@ -21,6 +21,7 @@ import InterviewSchedule from './components/student/InterviewSchedule';
 import CompanyDashboard from './components/company/CompanyDashboard';
 import CompanyProfile from './components/company/CompanyProfile';
 import PostJob from './components/company/PostJob';
+import CompanyJobList from './components/company/CompanyJobList';
 import JobDetails from './components/company/JobDetails';
 import EditJob from './components/company/EditJob';
 import ApplicantList from './components/company/ApplicantList';
@@ -85,6 +86,9 @@ function App() {
             } />
             <Route path="/company/post-job" element={
               <ProtectedRoute allowedRoles={['company']}><PostJob /></ProtectedRoute>
+            } />
+            <Route path="/company/jobs" element={
+              <ProtectedRoute allowedRoles={['company']}><CompanyJobList /></ProtectedRoute>
             } />
             <Route path="/company/jobs/:id" element={
               <ProtectedRoute allowedRoles={['company']}><JobDetails /></ProtectedRoute>

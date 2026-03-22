@@ -150,9 +150,9 @@ const CompanyDashboard = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => navigate(`/company/jobs/${job._id}`)}
+                          onClick={() => navigate(`/company/jobs/${job._id}/applicants`)}
                           className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition"
-                          title="View Details & Applicants"
+                          title="View Applicants"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
