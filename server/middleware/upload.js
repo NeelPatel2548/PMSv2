@@ -1,27 +1,36 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { v2: cloudinary } = require('cloudinary');
 
-// Ensure upload directory exists
-const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'resumes');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Configure Cloudinary from individual env vars
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-// Multer storage config
-const storage = multer.memoryStorage();
+// Cloudinary storage for resume PDFs
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'pms-resumes',
+    allowed_formats: ['pdf'],
+    resource_type: 'raw',
+    // Unique filename per upload to avoid collisions
+    public_id: (req, file) => `resume-${req.user.id}-${Date.now()}`
+  }
+});
 
-// File filter — basic extension check (magic byte validation done in controller)
+// File filter — reject anything that isn't PDF at the mimetype level
 const fileFilter = (req, file, cb) => {
-  const allowedMimeTypes = ['application/pdf'];
-  if (allowedMimeTypes.includes(file.mimetype)) {
+  if (file.mimetype === 'application/pdf') {
     cb(null, true);
   } else {
     cb(new Error('Only PDF files are allowed'), false);
   }
 };
 
-// Multer upload instance
+// Multer upload instance (same export name as before — no controller changes needed)
 const upload = multer({
   storage,
   fileFilter,
@@ -31,28 +40,24 @@ const upload = multer({
 });
 
 /**
- * Validate file using magic bytes (file-type library)
- * and save to disk. Call this after multer processes the file.
- * @param {Buffer} buffer - file buffer
- * @param {string} userId - user ID string (req.user.id)
- * @returns {Promise<string>} relative file path
+ * Delete a resume from Cloudinary by its secure URL.
+ * Extracts the public_id from the URL and destroys the resource.
+ * @param {string} url - The Cloudinary secure_url to delete
  */
-const validateAndSaveFile = async (buffer, userId) => {
-  // Dynamic import for ESM file-type library
-  const { fileTypeFromBuffer } = await import('file-type');
-
-  const type = await fileTypeFromBuffer(buffer);
-
-  if (!type || !['application/pdf'].includes(type.mime)) {
-    throw new Error('Invalid file type. Only PDF files are allowed.');
+const deleteCloudinaryFile = async (url) => {
+  if (!url || !url.includes('cloudinary')) return;
+  try {
+    // Extract public_id from URL: .../pms-resumes/resume-userId-timestamp.pdf
+    const parts = url.split('/');
+    const folderIndex = parts.indexOf('pms-resumes');
+    if (folderIndex === -1) return;
+    // public_id = pms-resumes/resume-userId-timestamp (without extension)
+    const filenameWithExt = parts.slice(folderIndex).join('/');
+    const publicId = filenameWithExt.replace(/\.[^/.]+$/, '');
+    await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
+  } catch (err) {
+    console.error('Cloudinary delete error (non-fatal):', err.message);
   }
-
-  const filename = `resume-${userId}-${Date.now()}.pdf`;
-  const filepath = path.join(uploadDir, filename);
-
-  fs.writeFileSync(filepath, buffer);
-
-  return `/uploads/resumes/${filename}`;
 };
 
-module.exports = { upload, validateAndSaveFile };
+module.exports = { upload, deleteCloudinaryFile };

@@ -1,15 +1,20 @@
 const express = require('express');
 const dotenv = require('dotenv');
+const path = require('path');
+
+// Load env vars FIRST — before anything else reads process.env
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
+// Validate all required env vars — hard-stop if any are missing
+const validateEnv = require('./config/validateEnv');
+validateEnv();
+
 const cors = require('cors');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const cookieParser = require('cookie-parser');
-const path = require('path');
 const connectDB = require('./config/db');
-
-// Load env vars
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 // Connect to database
 connectDB();
@@ -18,10 +23,16 @@ const app = express();
 
 // Security middleware
 app.use(helmet());
+
+// CORS — locked to the CLIENT_URL from env (no wildcard, no fallback)
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true
+  origin: process.env.CLIENT_URL,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+console.log('CORS origin:', process.env.CLIENT_URL);
+
 app.use(mongoSanitize());
 app.use(xss());
 

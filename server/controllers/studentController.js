@@ -1,6 +1,4 @@
 const { validationResult } = require('express-validator');
-const fs = require('fs');
-const path = require('path');
 const Student = require('../models/Student');
 const User = require('../models/User');
 const Job = require('../models/Job');
@@ -8,7 +6,7 @@ const Application = require('../models/Application');
 const Interview = require('../models/Interview');
 const Notification = require('../models/Notification');
 const { success, error } = require('../utils/apiResponse');
-const { validateAndSaveFile } = require('../middleware/upload');
+const { deleteCloudinaryFile } = require('../middleware/upload');
 
 // @desc    Get student profile
 // @route   GET /api/student/profile
@@ -170,22 +168,20 @@ exports.uploadResume = async (req, res) => {
       return error(res, 'No file uploaded', 400);
     }
 
-    // Bug Fix 5: Delete old resume file from disk before saving new one
     const student = await Student.findOne({ user: req.user._id });
     if (!student) {
       return error(res, 'Student profile not found', 404);
     }
+
+    // Delete old resume from Cloudinary if it exists
     if (student.resumeUrl) {
-      const oldFilePath = path.join(__dirname, '..', '..', student.resumeUrl);
-      if (fs.existsSync(oldFilePath)) {
-        try { fs.unlinkSync(oldFilePath); } catch (e) { console.log('Could not delete old resume:', e); }
-      }
+      await deleteCloudinaryFile(student.resumeUrl);
     }
 
-    // Validate via magic bytes and save
-    const resumeUrl = await validateAndSaveFile(req.file.buffer, req.user.id);
+    // Cloudinary returns the secure URL in req.file.path
+    const resumeUrl = req.file.path;
 
-    const updatedStudent = await Student.findOneAndUpdate(
+    await Student.findOneAndUpdate(
       { user: req.user._id },
       { resumeUrl },
       { returnDocument: 'after', runValidators: true }
