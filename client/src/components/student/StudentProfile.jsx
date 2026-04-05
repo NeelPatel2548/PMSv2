@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Save, PlusCircle, X, Upload, Linkedin, Github, CheckCircle } from 'lucide-react';
+import { Save, PlusCircle, X, Upload, Linkedin, Github, CheckCircle, FileDown } from 'lucide-react';
 import api from '../../services/api';
 import Loader from '../common/Loader';
 import SkillsSelector from '../common/SkillsSelector';
+import { generateResumePDF } from '../../utils/resumeGenerator';
 
 const StudentProfile = () => {
   const [profile, setProfile] = useState(null);
@@ -835,6 +836,16 @@ const StudentProfile = () => {
               disabled={uploading}
             />
           </label>
+          <button
+            onClick={() => generateResumePDF(profile)}
+            disabled={!profile.user?.name || !profile.branch}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-100 text-indigo-700 text-sm font-medium hover:bg-indigo-200 transition disabled:opacity-40 disabled:cursor-not-allowed ml-2"
+            id="generate-resume-pdf"
+            title={!profile.user?.name || !profile.branch ? 'Complete your profile first (name & branch required)' : 'Generate a PDF resume from your profile data'}
+          >
+            <FileDown className="w-4 h-4" />
+            Generate Resume PDF
+          </button>
         </div>
 
         {/* Spacer for sticky save button */}

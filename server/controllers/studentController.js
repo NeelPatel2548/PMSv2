@@ -5,8 +5,9 @@ const Job = require('../models/Job');
 const Application = require('../models/Application');
 const Interview = require('../models/Interview');
 const Notification = require('../models/Notification');
+const SystemSettings = require('../models/SystemSettings');
 const { success, error } = require('../utils/apiResponse');
-const { deleteCloudinaryFile, deleteFromCloudinary } = require('../middleware/upload'); // NEW — added deleteFromCloudinary
+const { deleteCloudinaryFile, deleteFromCloudinary } = require('../middleware/upload');
 
 // @desc    Get student profile
 // @route   GET /api/student/profile
@@ -322,9 +323,27 @@ exports.applyToJob = async (req, res) => {
       return error(res, 'Student profile not found', 404);
     }
 
-    // Bug Fix 1: Block placed students from applying to more jobs
-    if (student.placementStatus === 'placed') {
+    // ── Global Placement Settings Enforcement ──
+    const settings = await SystemSettings.getSettings();
+
+    if (!settings.placementSeasonActive) {
+      return error(res, 'The placement season is currently closed. Applications are not being accepted.', 400);
+    }
+
+    // Block placed students (respects admin setting)
+    if (settings.blockPlacedFromApplying && student.placementStatus === 'placed') {
       return error(res, 'You are already placed and cannot apply to more drives.', 400);
+    }
+
+    // Max applications cap
+    if (settings.maxApplicationsPerStudent > 0) {
+      const activeApps = await Application.countDocuments({
+        student: student._id,
+        status: { $nin: ['withdrawn', 'rejected'] }
+      });
+      if (activeApps >= settings.maxApplicationsPerStudent) {
+        return error(res, `You have reached the maximum of ${settings.maxApplicationsPerStudent} active applications.`, 400);
+      }
     }
 
     // Feature 2: Profile completion gate
@@ -374,8 +393,9 @@ exports.applyToJob = async (req, res) => {
     }
 
     // Re-check eligibility on server
-    if (job.minCGPA && (student.cgpa || 0) < job.minCGPA) {
-      return error(res, 'You do not meet the minimum CGPA requirement', 400);
+    const effectiveMinCGPA = Math.max(job.minCGPA || 0, settings.minCGPAOverride || 0);
+    if (effectiveMinCGPA > 0 && (student.cgpa || 0) < effectiveMinCGPA) {
+      return error(res, `You do not meet the minimum CGPA requirement (${effectiveMinCGPA})`, 400);
     }
 
     if (job.maxBacklogs !== undefined && (student.activeBacklogs || 0) > job.maxBacklogs) {
@@ -581,5 +601,122 @@ exports.getDashboard = async (req, res) => {
   } catch (err) {
     console.error('Get dashboard error:', err);
     return error(res, 'Failed to fetch dashboard', 500);
+  }
+};
+
+// @desc    Get all offers (applications where student was selected)
+// @route   GET /api/student/offers
+// @access  Private (student)
+exports.getOffers = async (req, res) => {
+  try {
+    const student = await Student.findOne({ user: req.user._id });
+    if (!student) return error(res, 'Student profile not found', 404);
+
+    const offers = await Application.find({
+      student: student._id,
+      status: 'selected'
+    })
+      .populate('job', 'title package jobType location deadline')
+      .populate('company', 'name logo')
+      .sort('-updatedAt');
+
+    return success(res, offers, 'Offers fetched');
+  } catch (err) {
+    console.error('Get offers error:', err);
+    return error(res, 'Failed to fetch offers', 500);
+  }
+};
+
+// @desc    Respond to an offer (accept or decline)
+// @route   PUT /api/student/applications/:id/offer
+// @access  Private (student)
+exports.respondToOffer = async (req, res) => {
+  try {
+    const { offerStatus } = req.body;
+    if (!['accepted', 'declined'].includes(offerStatus)) {
+      return error(res, 'offerStatus must be "accepted" or "declined"', 400);
+    }
+
+    const student = await Student.findOne({ user: req.user._id });
+    if (!student) return error(res, 'Student profile not found', 404);
+
+    const application = await Application.findOne({
+      _id: req.params.id,
+      student: student._id,
+      status: 'selected'
+    }).populate('job', 'title').populate('company', 'name user');
+
+    if (!application) {
+      return error(res, 'Offer not found or you are not eligible to respond', 404);
+    }
+
+    if (application.offerStatus === 'accepted') {
+      return error(res, 'You have already accepted this offer', 400);
+    }
+    if (application.offerStatus === 'declined') {
+      return error(res, 'You have already declined this offer', 400);
+    }
+
+    if (offerStatus === 'accepted') {
+      // Check if student already accepted another offer
+      const existingAccepted = await Application.findOne({
+        student: student._id,
+        offerStatus: 'accepted',
+        _id: { $ne: application._id }
+      });
+      if (existingAccepted) {
+        return error(res, 'You have already accepted another offer. Decline it first to accept this one.', 400);
+      }
+
+      application.offerStatus = 'accepted';
+      await application.save();
+
+      // Mark student as placed
+      student.placementStatus = 'placed';
+      student.placedIn = application.company._id;
+      await student.save();
+
+      // Notify company
+      await Notification.create({
+        user: application.company.user,
+        title: 'Offer Accepted',
+        message: `${req.user.name} has accepted the offer for "${application.job.title}"`,
+        type: 'application',
+        link: `/company/jobs/${application.job._id}/applicants`
+      });
+    } else {
+      // Declined
+      application.offerStatus = 'declined';
+      await application.save();
+
+      // If student was marked placed for THIS company, reset
+      if (String(student.placedIn) === String(application.company._id)) {
+        // Check if they have any other accepted offers
+        const otherAccepted = await Application.findOne({
+          student: student._id,
+          offerStatus: 'accepted',
+          _id: { $ne: application._id }
+        });
+        if (!otherAccepted) {
+          student.placementStatus = 'unplaced';
+          student.placedIn = undefined;
+          await student.save();
+        }
+      }
+
+      // Notify company
+      await Notification.create({
+        user: application.company.user,
+        title: 'Offer Declined',
+        message: `${req.user.name} has declined the offer for "${application.job.title}"`,
+        type: 'application',
+        link: `/company/jobs/${application.job._id}/applicants`
+      });
+    }
+
+    return success(res, application, `Offer ${offerStatus} successfully`);
+  } catch (err) {
+    console.error('Respond to offer error:', err);
+    return error(res, 'Failed to respond to offer', 500);
   }
 };

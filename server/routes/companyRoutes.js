@@ -16,7 +16,8 @@ const {
   updateApplicationStatus,
   scheduleInterview,
   submitRoundResult,
-  getDashboard
+  getDashboard,
+  exportApplicantsCSV
 } = require('../controllers/companyController');
 
 // All routes require authentication + company role
@@ -54,6 +55,7 @@ router.patch('/jobs/:id/status', toggleJobStatus);
 
 // Applicants
 router.get('/jobs/:id/applicants', getApplicants);
+router.get('/jobs/:id/export', exportApplicantsCSV);
 router.put('/applications/:id/status', [
   body('status').isIn(['applied', 'shortlisted', 'interview', 'selected', 'rejected'])
     .withMessage('Invalid status'),

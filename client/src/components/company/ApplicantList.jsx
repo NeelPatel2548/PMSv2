@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, ArrowLeft, FileText, CheckCircle, XCircle, Calendar } from 'lucide-react';
+import { Users, ArrowLeft, FileText, CheckCircle, XCircle, Calendar, Download } from 'lucide-react';
 import api from '../../services/api';
 import Loader from '../common/Loader';
 
@@ -26,6 +26,7 @@ const ApplicantList = () => {
   const [updating, setUpdating] = useState(null);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
   // Interview form state
   const [interviewFor, setInterviewFor] = useState(null);
@@ -115,10 +116,34 @@ const ApplicantList = () => {
         <button onClick={() => navigate('/company/jobs')} className="p-2 -ml-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold text-slate-800">Applicants</h1>
           {job && <p className="text-slate-500 text-sm mt-0.5">{job.title}</p>}
         </div>
+        <button
+          onClick={async () => {
+            setExporting(true);
+            try {
+              const res = await api.get(`/company/jobs/${jobId}/export`, { responseType: 'blob' });
+              const url = window.URL.createObjectURL(new Blob([res.data]));
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `applicants_${jobId}.csv`;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              window.URL.revokeObjectURL(url);
+            } catch (err) {
+              alert('Failed to export CSV');
+            } finally { setExporting(false); }
+          }}
+          disabled={exporting || applicants.length === 0}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 shadow-sm"
+          id="export-csv-btn"
+        >
+          <Download className="w-4 h-4" />
+          {exporting ? 'Exporting...' : 'Export CSV'}
+        </button>
       </div>
 
       {/* Stats Row */}

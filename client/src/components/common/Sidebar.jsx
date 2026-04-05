@@ -43,6 +43,7 @@ const Sidebar = () => {
     { to: '/admin/companies', icon: Building2, label: 'Companies' },
     { to: '/admin/jobs', icon: Briefcase, label: 'Jobs' },
     { to: '/admin/reports', icon: BarChart3, label: 'Reports' },
+    { to: '/admin/settings', icon: Settings, label: 'Settings' },
     { to: '#notifications', icon: Bell, label: 'Notifications', isNotification: true },
   ];
 

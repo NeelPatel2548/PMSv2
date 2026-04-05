@@ -266,14 +266,36 @@ const StudentDashboard = () => {
       {offers?.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
           className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-2xl p-6 border border-green-100">
-          <h2 className="text-lg font-semibold text-green-800 mb-4">🎉 Your Offers</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-green-800">🎉 Your Offers</h2>
+            <Link to="/student/applications" className="text-sm text-green-700 hover:text-green-800 font-medium">
+              Manage Offers →
+            </Link>
+          </div>
           <div className="space-y-2">
-            {offers.map(offer => (
-              <div key={offer._id} className="p-3 rounded-xl bg-white/60 border border-green-100">
-                <p className="font-medium text-green-800">{offer.job?.title || 'Offer'}</p>
-                {offer.offeredPackage && <p className="text-sm text-green-600">Package: {offer.offeredPackage}</p>}
-              </div>
-            ))}
+            {offers.map(offer => {
+              const offerBadge = {
+                pending: { bg: 'bg-amber-100 text-amber-700', label: '⏳ Pending Response' },
+                accepted: { bg: 'bg-emerald-100 text-emerald-800', label: '✅ Accepted' },
+                declined: { bg: 'bg-red-100 text-red-700', label: '❌ Declined' },
+              };
+              const badge = offerBadge[offer.offerStatus] || offerBadge.pending;
+              return (
+                <div key={offer._id} className={`p-4 rounded-xl border ${
+                  offer.offerStatus === 'accepted' ? 'bg-emerald-100/60 border-emerald-200' : 'bg-white/60 border-green-100'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-green-800">{offer.job?.title || 'Offer'}</p>
+                      {offer.offeredPackage && <p className="text-sm text-green-600 mt-0.5">📦 Package: {offer.offeredPackage}</p>}
+                    </div>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${badge.bg}`}>
+                      {badge.label}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </motion.div>
       )}

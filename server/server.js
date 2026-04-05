@@ -1,4 +1,5 @@
 const express = require('express');
+const http = require('http');
 const dotenv = require('dotenv');
 const path = require('path');
 const mongoose = require('mongoose');
@@ -38,6 +39,15 @@ mongoose.connection.on('error', (err) => {
 });
 
 const app = express();
+const httpServer = http.createServer(app);
+
+// Socket.IO — real-time notifications
+const { initSocket } = require('./services/socketService');
+initSocket(httpServer);
+
+// Interview reminder scheduler — checks every 30 minutes
+const { startInterviewReminders } = require('./services/interviewReminder');
+startInterviewReminders();
 
 // Security middleware
 app.use(helmet());
@@ -96,8 +106,8 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });
 
-module.exports = app;
+module.exports = { app, httpServer };

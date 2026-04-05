@@ -578,3 +578,69 @@ exports.getDashboard = async (req, res) => {
     return error(res, 'Failed to fetch dashboard', 500);
   }
 };
+
+// @desc    Export applicants for a job as CSV
+// @route   GET /api/company/jobs/:id/export
+// @access  Private (company)
+exports.exportApplicantsCSV = async (req, res) => {
+  try {
+    const company = await Company.findOne({ user: req.user._id });
+    if (!company) return error(res, 'Company profile not found', 404);
+
+    const job = await Job.findOne({ _id: req.params.id, company: company._id });
+    if (!job) return error(res, 'Job not found', 404);
+
+    const applications = await Application.find({ job: job._id })
+      .populate({
+        path: 'student',
+        select: 'enrollmentNo branch cgpa passingYear phone skills activeBacklogs tenthPercentage twelfthPercentage',
+        populate: { path: 'user', select: 'name email' }
+      })
+      .sort('-createdAt');
+
+    // CSV helper — escape fields with commas/quotes
+    const esc = (val) => {
+      if (val == null) return '';
+      const str = String(val);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    // Build CSV
+    const headers = [
+      'Name', 'Email', 'Enrollment No', 'Branch', 'CGPA', 'Passing Year',
+      'Phone', 'Skills', '10th %', '12th %', 'Active Backlogs',
+      'Status', 'Offer Status', 'Offered Package', 'Applied On'
+    ];
+
+    const rows = applications.map(app => [
+      esc(app.student?.user?.name),
+      esc(app.student?.user?.email),
+      esc(app.student?.enrollmentNo),
+      esc(app.student?.branch),
+      esc(app.student?.cgpa),
+      esc(app.student?.passingYear),
+      esc(app.student?.phone),
+      esc((app.student?.skills || []).join('; ')),
+      esc(app.student?.tenthPercentage),
+      esc(app.student?.twelfthPercentage),
+      esc(app.student?.activeBacklogs),
+      esc(app.status),
+      esc(app.offerStatus || 'N/A'),
+      esc(app.offeredPackage || 'N/A'),
+      esc(app.createdAt ? new Date(app.createdAt).toLocaleDateString() : '')
+    ]);
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const filename = `${job.title.replace(/[^a-zA-Z0-9]/g, '_')}_applicants_${Date.now()}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.send(csv);
+  } catch (err) {
+    console.error('Export applicants CSV error:', err);
+    return error(res, 'Failed to export applicants', 500);
+  }
+};

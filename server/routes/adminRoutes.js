@@ -18,7 +18,8 @@ const {
   toggleUserStatus,
   createAnnouncement,
   generateReport,
-  getReports
+  getReports,
+  exportUnplacedCSV
 } = require('../controllers/adminController');
 
 // All routes require authentication + admin role
@@ -27,8 +28,9 @@ router.use(protect, authorize('admin'));
 // Dashboard
 router.get('/dashboard', getDashboard);
 
-// Students — view only, suspend/unsuspend, delete
+// Students
 router.get('/students', getStudents);
+router.get('/students/export/unplaced', exportUnplacedCSV);
 router.get('/students/:id', getStudent);
 router.put('/students/:id/academic', updateStudentAcademic);
 router.put('/students/:id/verify-academic', verifyStudentAcademic);
@@ -66,5 +68,10 @@ router.get('/reports', getReports);
 router.post('/reports', [
   body('academicYear').trim().notEmpty().withMessage('Academic year is required'),
 ], generateReport);
+
+// Settings
+const { getSettings, updateSettings } = require('../controllers/settingsController');
+router.get('/settings', getSettings);
+router.put('/settings', updateSettings);
 
 module.exports = router;

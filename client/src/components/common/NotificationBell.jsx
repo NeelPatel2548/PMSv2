@@ -3,29 +3,47 @@ import { Bell, Briefcase, FileText, Calendar, Trophy, Megaphone, Shield, X } fro
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const typeConfig = {
   job_posted: { icon: Briefcase, color: 'bg-blue-100 text-blue-600', label: 'Job' },
+  application: { icon: FileText, color: 'bg-purple-100 text-purple-600', label: 'Application' },
   application_update: { icon: FileText, color: 'bg-purple-100 text-purple-600', label: 'Application' },
   interview_scheduled: { icon: Calendar, color: 'bg-orange-100 text-orange-600', label: 'Interview' },
+  interview_reminder: { icon: Calendar, color: 'bg-amber-100 text-amber-600', label: 'Reminder' },
   offer_received: { icon: Trophy, color: 'bg-green-100 text-green-600', label: 'Offer' },
   announcement: { icon: Megaphone, color: 'bg-slate-100 text-slate-600', label: 'Announcement' },
   security: { icon: Shield, color: 'bg-red-100 text-red-600', label: 'Security' },
 };
 
 const NotificationBell = () => {
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { unreadCount, decrementUnread, resetUnread, getSocket } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState(null);
   const modalRef = useRef(null);
   const navigate = useNavigate();
 
+  // Listen for real-time notifications — show toast
   useEffect(() => {
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    const socket = getSocket();
+    if (!socket) return;
+
+    const handleNotification = (notif) => {
+      // Show a brief toast
+      setToast({ title: notif.title, message: notif.message });
+      setTimeout(() => setToast(null), 4000);
+
+      // If panel is open, prepend to list
+      if (isOpen) {
+        setNotifications(prev => [notif, ...prev]);
+      }
+    };
+
+    socket.on('notification', handleNotification);
+    return () => socket.off('notification', handleNotification);
+  }, [getSocket, isOpen]);
 
   // Close on outside click
   useEffect(() => {
@@ -45,13 +63,6 @@ const NotificationBell = () => {
     return () => document.removeEventListener('keydown', handleEsc);
   }, []);
 
-  const fetchUnreadCount = async () => {
-    try {
-      const res = await api.get('/notifications/unread-count');
-      if (res.data.success) setUnreadCount(res.data.data.count);
-    } catch { /* ignore */ }
-  };
-
   const fetchNotifications = async () => {
     setLoading(true);
     try {
@@ -69,7 +80,7 @@ const NotificationBell = () => {
     try {
       await api.put(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      decrementUnread();
     } catch { /* ignore */ }
   };
 
@@ -77,7 +88,7 @@ const NotificationBell = () => {
     try {
       await api.put('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      setUnreadCount(0);
+      resetUnread();
     } catch { /* ignore */ }
   };
 
@@ -117,6 +128,31 @@ const NotificationBell = () => {
           </motion.span>
         )}
       </button>
+
+      {/* Toast Notification - slides in from top-right */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, x: 20 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 right-4 z-[60] bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 max-w-xs"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                <Bell className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-800 truncate">{toast.title}</p>
+                <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{toast.message}</p>
+              </div>
+              <button onClick={() => setToast(null)} className="p-0.5 hover:bg-slate-100 rounded-lg">
+                <X className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Modal Overlay + Panel */}
       <AnimatePresence>

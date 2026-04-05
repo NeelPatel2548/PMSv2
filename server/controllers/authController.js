@@ -102,12 +102,6 @@ exports.register = async (req, res) => {
       otpExpiry
     });
 
-    console.log('[REGISTER] Stored pending:', {
-      email: normalizedEmail,
-      otp,
-      otpType: typeof otp,
-      mapSize: pendingRegistrations.size
-    });
 
     // Send OTP email — if it fails, remove from map so user can retry
     try {
@@ -140,21 +134,10 @@ exports.verifyOTP = async (req, res) => {
     const { email, otp } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
-    console.log('[VERIFY-OTP] Received:', {
-      email: normalizedEmail,
-      otp,
-      otpType: typeof otp
-    });
 
     // Look up pending registration
     const pending = pendingRegistrations.get(normalizedEmail);
 
-    console.log('[VERIFY-OTP] Map lookup:', {
-      found: !!pending,
-      storedOtp: pending?.otp,
-      storedOtpType: typeof pending?.otp,
-      match: String(pending?.otp) === String(otp).trim()
-    });
     if (!pending) {
       return error(res, 'Session expired. Please register again.', 400);
     }
@@ -175,7 +158,6 @@ exports.verifyOTP = async (req, res) => {
       }
     }
 
-    console.log('[VERIFY-OTP] Starting user creation...');
 
     try {
       // OTP valid — create the User document now.
@@ -191,22 +173,18 @@ exports.verifyOTP = async (req, res) => {
       newUser.password = pending.hashedPassword;
       newUser.$locals.skipHash = true;
       const user = await newUser.save();
-      console.log('[VERIFY-OTP] User created:', user._id);
 
       // Create role-specific document
       if (pending.role === 'student') {
         const student = await Student.create({ user: user._id });
-        console.log('[VERIFY-OTP] Student created:', student._id);
       }
       if (pending.role === 'company') {
         const company = await Company.create({ user: user._id, name: pending.name });
-        console.log('[VERIFY-OTP] Company created:', company._id);
       }
 
       // Remove from pending map
       pendingRegistrations.delete(normalizedEmail);
 
-      console.log('[VERIFY-OTP] SUCCESS - returning response');
       // Do NOT auto-issue JWT — force the user to login (cleaner security model)
       return success(res, null, 'Account created successfully. Please log in.', 201);
     } catch (createError) {

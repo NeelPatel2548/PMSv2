@@ -34,6 +34,7 @@ import ManageCompanies from './components/admin/ManageCompanies';
 import AdminCompanyView from './components/admin/AdminCompanyView';
 import ManageJobs from './components/admin/ManageJobs';
 import PlacementReports from './components/admin/PlacementReports';
+import PlacementSettings from './components/admin/PlacementSettings';
 
 // Public pages
 import LandingPage from './pages/LandingPage';
@@ -122,6 +123,9 @@ function App() {
             } />
             <Route path="/admin/reports" element={
               <ProtectedRoute allowedRoles={['admin']}><PlacementReports /></ProtectedRoute>
+            } />
+            <Route path="/admin/settings" element={
+              <ProtectedRoute allowedRoles={['admin']}><PlacementSettings /></ProtectedRoute>
             } />
 
             {/* 404 */}

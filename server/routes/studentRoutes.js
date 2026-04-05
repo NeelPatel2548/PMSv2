@@ -13,7 +13,9 @@ const {
   getApplications,
   withdrawApplication,
   getInterviews,
-  getDashboard
+  getDashboard,
+  getOffers,
+  respondToOffer
 } = require('../controllers/studentController');
 
 // All routes require authentication + student role
@@ -47,5 +49,11 @@ router.put('/applications/:id/withdraw', withdrawApplication);
 
 // Interviews
 router.get('/interviews', getInterviews);
+
+// Offers
+router.get('/offers', getOffers);
+router.put('/applications/:id/offer', [
+  body('offerStatus').isIn(['accepted', 'declined']).withMessage('offerStatus must be accepted or declined'),
+], respondToOffer);
 
 module.exports = router;

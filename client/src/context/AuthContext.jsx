@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
+import { connectSocket, disconnectSocket, getSocket } from '../services/socket';
 
 const AuthContext = createContext(null);
 
@@ -14,11 +15,40 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Check auth status on mount
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // Socket.IO — connect when user is set, disconnect on logout
+  useEffect(() => {
+    if (user) {
+      const socket = connectSocket();
+
+      // Listen for real-time notifications
+      socket.on('notification', (notif) => {
+        setUnreadCount(prev => prev + 1);
+      });
+
+      // Fetch initial unread count
+      api.get('/notifications/unread-count')
+        .then(res => {
+          if (res.data.success) {
+            setUnreadCount(res.data.data?.count ?? 0);
+          }
+        })
+        .catch(() => {});
+
+      return () => {
+        socket.off('notification');
+      };
+    } else {
+      disconnectSocket();
+      setUnreadCount(0);
+    }
+  }, [user]);
 
   const checkAuth = async () => {
     try {
@@ -66,12 +96,22 @@ export const AuthProvider = ({ children }) => {
     } catch {
       // ignore
     }
+    disconnectSocket();
     setUser(null);
+    setUnreadCount(0);
   };
 
   const updateUser = (userData) => {
     setUser(prev => ({ ...prev, ...userData }));
   };
+
+  const decrementUnread = useCallback(() => {
+    setUnreadCount(prev => Math.max(0, prev - 1));
+  }, []);
+
+  const resetUnread = useCallback(() => {
+    setUnreadCount(0);
+  }, []);
 
   const value = {
     user,
@@ -84,6 +124,10 @@ export const AuthProvider = ({ children }) => {
     updateUser,
     checkAuth,
     isAuthenticated: !!user,
+    unreadCount,
+    decrementUnread,
+    resetUnread,
+    getSocket,
   };
 
   return (

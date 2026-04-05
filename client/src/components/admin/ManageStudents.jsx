@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Trash2, UserX, UserCheck, Eye, X, AlertCircle, GraduationCap } from 'lucide-react';
+import { Search, Trash2, UserX, UserCheck, Eye, X, AlertCircle, GraduationCap, Download } from 'lucide-react';
 import api from '../../services/api';
 import Loader from '../common/Loader';
 
@@ -104,6 +104,31 @@ const ManageStudents = () => {
           <h1 className="text-2xl font-bold text-slate-800">Manage Students</h1>
           <p className="text-slate-500 text-sm mt-1">View, suspend, or delete student accounts</p>
         </div>
+        <button
+          onClick={async () => {
+            try {
+              const params = new URLSearchParams();
+              if (filters.branch) params.set('branch', filters.branch);
+              if (filters.passingYear) params.set('passingYear', filters.passingYear);
+              const res = await api.get(`/admin/students/export/unplaced?${params}`, { responseType: 'blob' });
+              const url = window.URL.createObjectURL(new Blob([res.data]));
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `unplaced_students.csv`;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              window.URL.revokeObjectURL(url);
+            } catch {
+              alert('Failed to export');
+            }
+          }}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition-colors shadow-sm whitespace-nowrap"
+          id="export-unplaced-btn"
+        >
+          <Download className="w-4 h-4" />
+          Export Unplaced
+        </button>
       </div>
 
       {/* Error banner */}

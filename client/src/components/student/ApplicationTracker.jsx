@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, XCircle } from 'lucide-react';
+import { FileText, XCircle, CheckCircle, ThumbsDown, Loader2 } from 'lucide-react';
 import api from '../../services/api';
 import Loader from '../common/Loader';
 
@@ -11,6 +11,12 @@ const statusColors = {
   selected: 'bg-green-100 text-green-700',
   rejected: 'bg-red-100 text-red-700',
   withdrawn: 'bg-slate-100 text-slate-500',
+};
+
+const offerStatusColors = {
+  pending: 'bg-amber-50 text-amber-700 border-amber-200',
+  accepted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  declined: 'bg-red-50 text-red-600 border-red-200',
 };
 
 // Timeline steps in order
@@ -33,6 +39,8 @@ const ApplicationTracker = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [withdrawing, setWithdrawing] = useState(null);
+  const [responding, setResponding] = useState(null); // tracks which app is being accepted/declined
+  const [confirmModal, setConfirmModal] = useState(null); // { id, action: 'accepted'|'declined', jobTitle }
 
   useEffect(() => {
     const fetch = async () => {
@@ -51,6 +59,25 @@ const ApplicationTracker = () => {
       await api.put(`/student/applications/${id}/withdraw`);
       setApplications(prev => prev.map(a => a._id === id ? { ...a, status: 'withdrawn' } : a));
     } catch { /* ignore */ } finally { setWithdrawing(null); }
+  };
+
+  const handleOfferResponse = async () => {
+    if (!confirmModal) return;
+    const { id, action } = confirmModal;
+    setResponding(id);
+    setConfirmModal(null);
+    try {
+      const res = await api.put(`/student/applications/${id}/offer`, { offerStatus: action });
+      if (res.data.success) {
+        setApplications(prev =>
+          prev.map(a => a._id === id ? { ...a, offerStatus: action } : a)
+        );
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to respond to offer');
+    } finally {
+      setResponding(null);
+    }
   };
 
   if (loading) return <Loader />;
@@ -76,7 +103,9 @@ const ApplicationTracker = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
-              className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
+              className={`bg-white rounded-2xl p-5 border shadow-sm hover:shadow-md transition-shadow ${
+                app.status === 'selected' ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-100'
+              }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -87,11 +116,41 @@ const ApplicationTracker = () => {
                       {app.status}
                     </span>
                     {app.currentRound && <span className="text-xs text-slate-400">Round: {app.currentRound}</span>}
-                    {app.offeredPackage && <span className="text-xs text-green-600 font-medium">Package: {app.offeredPackage}</span>}
+                    {app.offeredPackage && <span className="text-xs text-green-600 font-medium">📦 Package: {app.offeredPackage}</span>}
+                    {/* Show offer status badge when selected */}
+                    {app.status === 'selected' && app.offerStatus && (
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${offerStatusColors[app.offerStatus] || offerStatusColors.pending}`}>
+                        Offer: {app.offerStatus}
+                      </span>
+                    )}
                   </div>
                   {app.remarks && <p className="text-xs text-slate-400 mt-1">{app.remarks}</p>}
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* Offer Accept/Decline buttons — only for selected + pending */}
+                  {app.status === 'selected' && (!app.offerStatus || app.offerStatus === 'pending') && (
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => setConfirmModal({ id: app._id, action: 'accepted', jobTitle: app.job?.title })}
+                        disabled={responding === app._id}
+                        className="text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 disabled:opacity-50"
+                        id={`accept-offer-${app._id}`}
+                      >
+                        {responding === app._id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => setConfirmModal({ id: app._id, action: 'declined', jobTitle: app.job?.title })}
+                        disabled={responding === app._id}
+                        className="text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 disabled:opacity-50"
+                        id={`decline-offer-${app._id}`}
+                      >
+                        <ThumbsDown className="w-3.5 h-3.5" />
+                        Decline
+                      </button>
+                    </div>
+                  )}
+                  {/* Withdraw button — only for non-final statuses */}
                   {!['selected', 'rejected', 'withdrawn'].includes(app.status) && (
                     <button
                       onClick={() => handleWithdraw(app._id)}
@@ -139,6 +198,49 @@ const ApplicationTracker = () => {
               <p className="text-xs text-slate-300 mt-3">Applied: {new Date(app.createdAt).toLocaleDateString()}</p>
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6"
+          >
+            <h3 className="text-lg font-bold text-slate-800 mb-2">
+              {confirmModal.action === 'accepted' ? '✅ Accept Offer' : '❌ Decline Offer'}
+            </h3>
+            <p className="text-sm text-slate-600 mb-1">
+              {confirmModal.action === 'accepted'
+                ? `Are you sure you want to accept the offer for "${confirmModal.jobTitle}"?`
+                : `Are you sure you want to decline the offer for "${confirmModal.jobTitle}"?`}
+            </p>
+            <p className="text-xs text-slate-400 mb-6">
+              {confirmModal.action === 'accepted'
+                ? 'You will be marked as placed. You can only hold one accepted offer at a time.'
+                : 'Your placement status will be reset if this was your only accepted offer.'}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleOfferResponse}
+                className={`px-4 py-2 rounded-xl text-white text-sm font-semibold transition shadow-sm ${
+                  confirmModal.action === 'accepted'
+                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : 'bg-red-500 hover:bg-red-600'
+                }`}
+              >
+                {confirmModal.action === 'accepted' ? 'Accept' : 'Decline'}
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
     </div>
