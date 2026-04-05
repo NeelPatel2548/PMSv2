@@ -1,29 +1,90 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Mail, Lock, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, ArrowRight, CheckCircle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 
 const VerifyOTP = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const initialEmail = location.state?.email || '';
+  const { verifyOTP, loginVerify, user } = useAuth();
+
+  // Read email and type from navigation state
+  const email = location.state?.email || '';
+  const type = location.state?.type || 'register';
   const purpose = location.state?.purpose || 'verification';
 
-  const [step, setStep] = useState(purpose === 'reset' && !initialEmail ? 'email' : 'otp');
-  const [email, setEmail] = useState(initialEmail);
-  const [otp, setOtp] = useState('');
+  // Determine initial step
+  const getInitialStep = () => {
+    if (purpose === 'reset' && !email) return 'email';
+    return 'otp';
+  };
+
+  const [step, setStep] = useState(getInitialStep());
+  const [resetEmail, setResetEmail] = useState(email);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [countdown, setCountdown] = useState(0);
+  const inputRefs = useRef([]);
+
+  // If no email and not a reset flow, redirect back to register
+  useEffect(() => {
+    if (!email && purpose !== 'reset') {
+      navigate('/register', { replace: true });
+    }
+  }, [email, purpose, navigate]);
+
+  // If user is already authenticated (e.g., after login OTP verify),
+  // redirect to their dashboard
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'student') navigate('/student/dashboard', { replace: true });
+      else if (user.role === 'company') navigate('/company/dashboard', { replace: true });
+      else if (user.role === 'admin') navigate('/admin/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
+
+  const handleOtpChange = (index, value) => {
+    if (!/^\d?$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pasted.length > 0) {
+      const newOtp = [...otp];
+      for (let i = 0; i < 6; i++) newOtp[i] = pasted[i] || '';
+      setOtp(newOtp);
+      const focusIdx = Math.min(pasted.length, 5);
+      inputRefs.current[focusIdx]?.focus();
+    }
+  };
+
+  const otpString = otp.join('');
+  const activeEmail = email || resetEmail;
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      await api.post('/auth/forgot-password', { email });
+      await api.post('/auth/forgot-password', { email: resetEmail });
       setStep('otp');
       setSuccessMsg('OTP sent to your email.');
     } catch (err) {
@@ -35,23 +96,32 @@ const VerifyOTP = () => {
 
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
+    if (loading) return; // prevent double-submit
     setLoading(true);
     setError('');
     setSuccessMsg('');
     try {
-      if (purpose === 'verification') {
-        const res = await api.post('/auth/verify-otp', { email, otp });
-        if (res.data.success) {
-          const user = res.data.data;
-          window.location.href = `/${user.role}/dashboard`;
-        }
-      } else if (purpose === 'reset') {
-        await api.post('/auth/verify-reset-otp', { email, otp });
+      if (purpose === 'reset') {
+        // Password reset OTP verification
+        await api.post('/auth/verify-reset-otp', { email: activeEmail, otp: otpString });
         setStep('newPassword');
         setSuccessMsg('OTP verified. Enter your new password.');
+      } else if (type === 'login') {
+        // Login OTP — AuthContext loginVerify sets cookie + calls checkAuth
+        await loginVerify(activeEmail, otpString);
+        // useEffect on `user` will redirect to dashboard
+      } else {
+        // Registration OTP — backend does NOT set cookie here,
+        // it just creates the account. User must login afterwards.
+        const res = await verifyOTP(activeEmail, otpString);
+        // Show success and redirect to login
+        setSuccessMsg(res.message || 'Account created successfully! Redirecting to login...');
+        setTimeout(() => {
+          navigate('/login', { replace: true });
+        }, 2000);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Verification failed');
+      setError(err.response?.data?.message || 'Verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -65,9 +135,9 @@ const VerifyOTP = () => {
     setLoading(true);
     setError('');
     try {
-      await api.post('/auth/reset-password', { email, newPassword });
+      await api.post('/auth/reset-password', { email: activeEmail, newPassword });
       setSuccessMsg('Password reset successfully!');
-      setTimeout(() => navigate('/login'), 2000);
+      setTimeout(() => navigate('/login', { replace: true }), 2000);
     } catch (err) {
       setError(err.response?.data?.message || 'Reset failed');
     } finally {
@@ -76,103 +146,137 @@ const VerifyOTP = () => {
   };
 
   const handleResend = async () => {
+    if (countdown > 0) return;
     try {
-      await api.post('/auth/resend-otp', { email, purpose: purpose === 'reset' ? 'reset' : 'verification' });
+      await api.post('/auth/resend-otp', {
+        email: activeEmail,
+        purpose: purpose === 'reset' ? 'reset' : type === 'login' ? 'login' : 'verification'
+      });
       setSuccessMsg('OTP resent.');
       setError('');
+      setOtp(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
+      setCountdown(30);
+      const timer = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) { clearInterval(timer); return 0; }
+          return prev - 1;
+        });
+      }, 1000);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to resend');
     }
   };
 
+  const btnClass = "w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5";
+  const inputClass = "w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm";
+  const iconClass = "absolute left-3.5 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-slate-400";
+
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
-      >
-        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-8 border border-slate-100">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-slate-50">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 border border-slate-100">
           <div className="text-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
-              <ShieldCheck className="w-7 h-7 text-white" />
+            {/* Icon */}
+            <div className="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center mx-auto mb-4">
+              {step === 'newPassword'
+                ? <Lock className="w-8 h-8 text-indigo-600" />
+                : step === 'otp'
+                  ? <Mail className="w-8 h-8 text-indigo-600" />
+                  : <ShieldCheck className="w-8 h-8 text-indigo-600" />
+              }
             </div>
-            <h1 className="text-2xl font-bold text-slate-800">
-              {step === 'email' ? 'Forgot Password' : step === 'otp' ? 'Enter OTP' : 'New Password'}
+            <h1 className="text-2xl font-bold text-slate-900">
+              {step === 'email' ? 'Forgot Password' : step === 'otp' ? 'Check Your Email' : 'New Password'}
             </h1>
-            <p className="text-slate-500 mt-1 text-sm">
+            <p className="text-slate-500 mt-1.5 text-sm">
               {step === 'email' ? 'Enter your email to receive a reset OTP'
-                : step === 'otp' ? `Enter the 6-digit code sent to ${email}`
+                : step === 'otp' ? `Enter the 6-digit code sent to ${activeEmail}`
                 : 'Set your new password'}
             </p>
           </div>
 
           {error && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-3 rounded-xl bg-red-50 text-red-600 text-sm border border-red-100">{error}</motion.div>
+              className="mb-5 p-3 rounded-xl bg-red-50 text-red-600 text-sm border border-red-100 font-medium">{error}</motion.div>
           )}
           {successMsg && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-3 rounded-xl bg-green-50 text-green-600 text-sm border border-green-100">{successMsg}</motion.div>
+              className="mb-5 p-3 rounded-xl bg-emerald-50 text-emerald-600 text-sm border border-emerald-100 font-medium flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 flex-shrink-0" />
+              {successMsg}
+            </motion.div>
           )}
 
           {step === 'email' && (
-            <form onSubmit={handleForgotPassword} className="space-y-4">
+            <form onSubmit={handleForgotPassword} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Email</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition text-sm"
-                    placeholder="you@example.com" id="forgot-email" />
+                  <Mail className={iconClass} />
+                  <input type="email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required
+                    className={inputClass} placeholder="you@example.com" id="forgot-email" />
                 </div>
               </div>
-              <button type="submit" disabled={loading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold hover:from-violet-600 hover:to-purple-700 transition-all disabled:opacity-60 flex items-center justify-center gap-2">
+              <button type="submit" disabled={loading} className={btnClass}>
                 {loading ? 'Sending...' : 'Send OTP'}{!loading && <ArrowRight className="w-4 h-4" />}
               </button>
             </form>
           )}
 
           {step === 'otp' && (
-            <form onSubmit={handleVerifyOTP} className="space-y-4">
+            <form onSubmit={handleVerifyOTP} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">OTP Code</label>
-                <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} required maxLength={6}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition text-center text-2xl font-bold tracking-[0.5em]"
-                  placeholder="000000" id="verify-otp-input" />
+                <label className="block text-sm font-semibold text-slate-700 mb-3 text-center">OTP Code</label>
+                <div className="flex justify-center gap-3" onPaste={handleOtpPaste}>
+                  {otp.map((digit, i) => (
+                    <input
+                      key={i}
+                      ref={el => inputRefs.current[i] = el}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleOtpChange(i, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                      className="w-12 h-14 text-center text-xl font-bold rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:scale-105 outline-none transition-all"
+                      id={`otp-digit-${i}`}
+                    />
+                  ))}
+                </div>
               </div>
-              <button type="submit" disabled={loading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold hover:from-violet-600 hover:to-purple-700 transition-all disabled:opacity-60">
+              <button type="submit" disabled={loading || otpString.length < 6} className={btnClass}>
                 {loading ? 'Verifying...' : 'Verify OTP'}
               </button>
-              <button type="button" onClick={handleResend}
-                className="w-full py-2 text-sm text-primary-600 hover:text-primary-700 font-medium">
-                Resend OTP
-              </button>
+              <div className="text-center">
+                <button type="button" onClick={handleResend} disabled={countdown > 0}
+                  className={`text-sm font-semibold transition-colors ${countdown > 0 ? 'text-slate-400 cursor-not-allowed' : 'text-indigo-600 hover:text-indigo-700'}`}>
+                  {countdown > 0 ? (
+                    <span>Resend in <span className="font-mono tabular-nums text-indigo-600">{countdown}s</span></span>
+                  ) : 'Resend OTP'}
+                </button>
+              </div>
             </form>
           )}
 
           {step === 'newPassword' && (
-            <form onSubmit={handleResetPassword} className="space-y-4">
+            <form onSubmit={handleResetPassword} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">New Password</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">New Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <Lock className={iconClass} />
                   <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition text-sm"
-                    placeholder="Min. 6 characters" id="reset-new-password" />
+                    className={inputClass} placeholder="Min. 6 characters" id="reset-new-password" />
                 </div>
               </div>
-              <button type="submit" disabled={loading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold hover:from-violet-600 hover:to-purple-700 transition-all disabled:opacity-60">
+              <button type="submit" disabled={loading} className={btnClass}>
                 {loading ? 'Resetting...' : 'Reset Password'}
               </button>
             </form>
           )}
 
           <p className="mt-6 text-center text-sm text-slate-500">
-            <Link to="/login" className="text-primary-600 hover:text-primary-700 font-semibold">Back to Login</Link>
+            <Link to="/login" className="text-indigo-600 hover:text-indigo-700 font-semibold">Back to Login</Link>
           </p>
         </div>
       </motion.div>

@@ -45,13 +45,26 @@ const applicationSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Unique compound index: one application per student per job
+// ---------------------------------------------------------------------------
+// Indexes
+// ---------------------------------------------------------------------------
+
+// CRITICAL: Unique compound index — prevents a student from applying to the
+// same job twice. This is a database-level constraint, not just app-level.
+// Query: Application.findOne({ student: studentId, job: jobId })
 applicationSchema.index({ student: 1, job: 1 }, { unique: true });
 
-// Individual indexes
-applicationSchema.index({ student: 1 });
-applicationSchema.index({ job: 1 });
+// Compound: applicant list by status for a specific job (company/admin view)
+// Query: Application.find({ job: jobId, status: 'shortlisted' })
+// job first (equality, high selectivity), status second (filter)
+applicationSchema.index({ job: 1, status: 1 });
+
+// Compound: student's own application tracker filtered by status
+// Query: Application.find({ student: studentId, status: 'applied' })
+applicationSchema.index({ student: 1, status: 1 });
+
+// company: admin / company view — all applications for a company
+// Query: Application.find({ company: companyId })
 applicationSchema.index({ company: 1 });
-applicationSchema.index({ status: 1 });
 
 module.exports = mongoose.model('Application', applicationSchema);

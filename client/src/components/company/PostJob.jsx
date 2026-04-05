@@ -48,7 +48,7 @@ const PostJob = () => {
     } finally { setLoading(false); }
   };
 
-  const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition text-sm";
+  const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm";
   const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
 
   return (
@@ -60,7 +60,7 @@ const PostJob = () => {
       {error && <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-600 text-sm border border-red-100">{error}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-2xl p-6 border border-slate-100">
+        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">Job Details</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2"><label className={labelClass}>Job Title *</label><input type="text" name="title" value={formData.title} onChange={handleChange} required className={inputClass} placeholder="e.g. Software Engineer" /></div>
@@ -75,7 +75,7 @@ const PostJob = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 border border-slate-100">
+        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">Eligibility Criteria</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div><label className={labelClass}>Min CGPA</label><input type="number" name="minCGPA" value={formData.minCGPA} onChange={handleChange} min="0" max="10" step="0.1" className={inputClass} /></div>
@@ -87,14 +87,14 @@ const PostJob = () => {
               {branches.map(b => (
                 <button key={b} type="button" onClick={() => toggleBranch(b)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    formData.eligibleBranches.includes(b) ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    formData.eligibleBranches.includes(b) ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}>{b}</button>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 border border-slate-100">
+        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">Required Skills</h2>
           <SkillsSelector
             selected={formData.requiredSkills}
@@ -104,7 +104,7 @@ const PostJob = () => {
         </div>
 
         <button type="submit" disabled={loading}
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold hover:from-primary-700 hover:to-primary-800 transition-all disabled:opacity-60">
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-60 shadow-lg shadow-indigo-500/25">
           {loading ? 'Posting...' : 'Post Job'}
         </button>
       </form>

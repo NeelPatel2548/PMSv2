@@ -1,27 +1,66 @@
 const express = require('express');
+const http = require('http');
 const dotenv = require('dotenv');
+const path = require('path');
+const mongoose = require('mongoose');
+
+// Load env vars FIRST — before anything else reads process.env
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
+// Validate all required env vars — hard-stop if any are missing
+const validateEnv = require('./config/validateEnv');
+validateEnv();
+
 const cors = require('cors');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const cookieParser = require('cookie-parser');
-const path = require('path');
 const connectDB = require('./config/db');
-
-// Load env vars
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 // Connect to database
 connectDB();
 
+// ---------------------------------------------------------------------------
+// MongoDB connection lifecycle events
+// These fire after the initial connection is established and are critical
+// for diagnosing intermittent Atlas connectivity issues on cloud platforms.
+// ---------------------------------------------------------------------------
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️  MongoDB disconnected — attempting to reconnect...');
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('✅ MongoDB reconnected successfully');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB connection error:', err.message);
+});
+
 const app = express();
+const httpServer = http.createServer(app);
+
+// Socket.IO — real-time notifications
+const { initSocket } = require('./services/socketService');
+initSocket(httpServer);
+
+// Interview reminder scheduler — checks every 30 minutes
+const { startInterviewReminders } = require('./services/interviewReminder');
+startInterviewReminders();
 
 // Security middleware
 app.use(helmet());
+
+// CORS — locked to the CLIENT_URL from env (no wildcard, no fallback)
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true
+  origin: process.env.CLIENT_URL,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+console.log('CORS origin:', process.env.CLIENT_URL);
+
 app.use(mongoSanitize());
 app.use(xss());
 
@@ -67,8 +106,8 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });
 
-module.exports = app;
+module.exports = { app, httpServer };

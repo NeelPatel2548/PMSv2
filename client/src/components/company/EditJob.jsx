@@ -80,7 +80,7 @@ const EditJob = () => {
   if (loading) return <Loader />;
   if (!formData) return <p className="text-center text-slate-500 mt-10">Job not found.</p>;
 
-  const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition text-sm";
+  const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm";
   const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
 
   return (
@@ -188,7 +188,7 @@ const EditJob = () => {
                     type="checkbox"
                     checked={(formData.eligibleBranches || []).includes(branch)}
                     onChange={() => handleBranchChange(branch)}
-                    className="w-4 h-4 text-primary-600 rounded border-slate-300 focus:ring-primary-500"
+                    className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
                   />
                   <span className="text-sm font-medium text-slate-700">{branch}</span>
                 </label>
@@ -201,7 +201,7 @@ const EditJob = () => {
           <button type="button" onClick={() => navigate(-1)} className="px-6 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition">
             Cancel
           </button>
-          <button type="submit" disabled={saving} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold hover:shadow-lg hover:shadow-primary-500/30 transition disabled:opacity-60 flex items-center gap-2">
+          <button type="submit" disabled={saving} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold hover:shadow-lg hover:shadow-indigo-500/30 transition disabled:opacity-60 flex items-center gap-2">
             <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>

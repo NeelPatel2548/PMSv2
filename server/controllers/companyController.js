@@ -7,6 +7,7 @@ const Student = require('../models/Student');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { success, error } = require('../utils/apiResponse');
+const { deleteFromCloudinary } = require('../middleware/upload'); // NEW
 
 // @desc    Get company profile
 // @route   GET /api/company/profile
@@ -37,8 +38,10 @@ exports.updateProfile = async (req, res) => {
       return error(res, 'Validation failed', 400, errors.array());
     }
 
+    // logo is updated via its own dedicated POST route, not here
     const allowed = ['name', 'industry', 'location', 'website', 'description',
-                     'hrName', 'hrEmail', 'hrPhone', 'logo'];
+                     'hrName', 'hrEmail', 'hrPhone'];
+    // CHANGED — removed 'logo' from allowed fields (now uses structured object via dedicated route)
     const updates = {};
     allowed.forEach(key => {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
@@ -66,6 +69,39 @@ exports.updateProfile = async (req, res) => {
     return error(res, 'Failed to update profile', 500);
   }
 };
+
+// @desc    Upload company logo // NEW
+// @route   POST /api/company/profile/logo // NEW
+// @access  Private (company) // NEW
+exports.uploadCompanyLogo = async (req, res) => { // NEW
+  try { // NEW
+    if (!req.file) { // NEW
+      return error(res, 'No logo file provided', 400); // NEW
+    } // NEW
+
+    const company = await Company.findOne({ user: req.user._id }); // NEW
+    if (!company) { // NEW
+      return error(res, 'Company profile not found', 404); // NEW
+    } // NEW
+
+    // Delete the OLD logo from Cloudinary before saving the new one
+    if (company.logo?.publicId) { // NEW
+      await deleteFromCloudinary(company.logo.publicId, 'image'); // NEW
+    } // NEW
+
+    // multer-storage-cloudinary: secure_url → req.file.path, public_id → req.file.filename
+    company.logo = { // NEW
+      url: req.file.path,       // Cloudinary secure_url // NEW
+      publicId: req.file.filename // Cloudinary public_id // NEW
+    }; // NEW
+    await company.save(); // NEW
+
+    return success(res, { logo: company.logo }, 'Company logo uploaded successfully'); // NEW
+  } catch (err) { // NEW
+    console.error('Upload company logo error:', err); // NEW
+    return error(res, err.message || 'Failed to upload logo', 500); // NEW
+  } // NEW
+}; // NEW
 
 // @desc    Post a new job
 // @route   POST /api/company/jobs
@@ -293,7 +329,11 @@ exports.getApplicants = async (req, res) => {
     const results = await Application.find(query)
       .populate({
         path: 'student',
+<<<<<<< HEAD
         select: 'enrollmentNo branch cgpa phone skills resumeUrl activeBacklogs placementStatus passingYear',
+=======
+        select: 'enrollmentNo branch cgpa phone skills resumeUrl activeBacklogs placementStatus passingYear profilePicture', // NEW — added profilePicture
+>>>>>>> main
         populate: { path: 'user', select: 'name email profileImageUrl' }
       })
       .skip(skip)
@@ -540,5 +580,71 @@ exports.getDashboard = async (req, res) => {
   } catch (err) {
     console.error('Get company dashboard error:', err);
     return error(res, 'Failed to fetch dashboard', 500);
+  }
+};
+
+// @desc    Export applicants for a job as CSV
+// @route   GET /api/company/jobs/:id/export
+// @access  Private (company)
+exports.exportApplicantsCSV = async (req, res) => {
+  try {
+    const company = await Company.findOne({ user: req.user._id });
+    if (!company) return error(res, 'Company profile not found', 404);
+
+    const job = await Job.findOne({ _id: req.params.id, company: company._id });
+    if (!job) return error(res, 'Job not found', 404);
+
+    const applications = await Application.find({ job: job._id })
+      .populate({
+        path: 'student',
+        select: 'enrollmentNo branch cgpa passingYear phone skills activeBacklogs tenthPercentage twelfthPercentage',
+        populate: { path: 'user', select: 'name email' }
+      })
+      .sort('-createdAt');
+
+    // CSV helper — escape fields with commas/quotes
+    const esc = (val) => {
+      if (val == null) return '';
+      const str = String(val);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    // Build CSV
+    const headers = [
+      'Name', 'Email', 'Enrollment No', 'Branch', 'CGPA', 'Passing Year',
+      'Phone', 'Skills', '10th %', '12th %', 'Active Backlogs',
+      'Status', 'Offer Status', 'Offered Package', 'Applied On'
+    ];
+
+    const rows = applications.map(app => [
+      esc(app.student?.user?.name),
+      esc(app.student?.user?.email),
+      esc(app.student?.enrollmentNo),
+      esc(app.student?.branch),
+      esc(app.student?.cgpa),
+      esc(app.student?.passingYear),
+      esc(app.student?.phone),
+      esc((app.student?.skills || []).join('; ')),
+      esc(app.student?.tenthPercentage),
+      esc(app.student?.twelfthPercentage),
+      esc(app.student?.activeBacklogs),
+      esc(app.status),
+      esc(app.offerStatus || 'N/A'),
+      esc(app.offeredPackage || 'N/A'),
+      esc(app.createdAt ? new Date(app.createdAt).toLocaleDateString() : '')
+    ]);
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const filename = `${job.title.replace(/[^a-zA-Z0-9]/g, '_')}_applicants_${Date.now()}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.send(csv);
+  } catch (err) {
+    console.error('Export applicants CSV error:', err);
+    return error(res, 'Failed to export applicants', 500);
   }
 };

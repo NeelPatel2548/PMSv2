@@ -57,10 +57,25 @@ const interviewSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// ---------------------------------------------------------------------------
 // Indexes
+// ---------------------------------------------------------------------------
+
+// application: look up all rounds for an application
+// Query: Interview.find({ application: applicationId })
 interviewSchema.index({ application: 1 });
+
+// student: student's interview schedule
+// Query: Interview.find({ student: studentId })
 interviewSchema.index({ student: 1 });
+
+// company: company's interview schedule
+// Query: Interview.find({ company: companyId })
 interviewSchema.index({ company: 1 });
+
+// scheduledAt: upcoming interviews sorted chronologically
+// Query: Interview.find({ status: 'scheduled' }).sort({ scheduledAt: 1 })
+// Also used for date-range queries (interviews this week)
 interviewSchema.index({ scheduledAt: 1 });
 
 module.exports = mongoose.model('Interview', interviewSchema);

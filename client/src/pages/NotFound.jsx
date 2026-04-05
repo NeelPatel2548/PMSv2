@@ -4,20 +4,20 @@ import { FileQuestion, Home } from 'lucide-react';
 
 const NotFound = () => {
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-slate-50">
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
         className="text-center max-w-md"
       >
-        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center mx-auto mb-6">
-          <FileQuestion className="w-10 h-10 text-slate-500" />
+        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center mx-auto mb-8 shadow-lg shadow-indigo-100/50">
+          <FileQuestion className="w-12 h-12 text-indigo-500" />
         </div>
-        <h1 className="text-6xl font-extrabold text-slate-800 mb-2">404</h1>
-        <p className="text-xl font-semibold text-slate-600 mb-2">Page Not Found</p>
-        <p className="text-slate-400 mb-8">The page you&apos;re looking for doesn&apos;t exist or has been moved.</p>
+        <h1 className="text-8xl font-extrabold gradient-text mb-3">404</h1>
+        <p className="text-xl font-bold text-slate-900 mb-2">Page Not Found</p>
+        <p className="text-slate-500 mb-10 leading-relaxed">The page you&apos;re looking for doesn&apos;t exist or has been moved.</p>
         <Link to="/"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 transition-colors">
+          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25">
           <Home className="w-4 h-4" /> Go Home
         </Link>
       </motion.div>

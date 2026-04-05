@@ -31,8 +31,10 @@ import RoundManager from './components/company/RoundManager';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ManageStudents from './components/admin/ManageStudents';
 import ManageCompanies from './components/admin/ManageCompanies';
+import AdminCompanyView from './components/admin/AdminCompanyView';
 import ManageJobs from './components/admin/ManageJobs';
 import PlacementReports from './components/admin/PlacementReports';
+import PlacementSettings from './components/admin/PlacementSettings';
 
 // Public pages
 import LandingPage from './pages/LandingPage';
@@ -51,7 +53,7 @@ function App() {
       <Navbar />
       <div className="flex">
         {isAuthenticated && <Sidebar />}
-        <main className={`flex-1 ${isAuthenticated ? 'p-4 sm:p-6 lg:p-8' : ''}`}>
+        <main className={`flex-1 w-full min-w-0 ${isAuthenticated ? 'p-4 sm:p-6 lg:p-8' : ''}`}>
           <Routes>
             {/* Public */}
             <Route path="/" element={<LandingPage />} />
@@ -113,11 +115,17 @@ function App() {
             <Route path="/admin/companies" element={
               <ProtectedRoute allowedRoles={['admin']}><ManageCompanies /></ProtectedRoute>
             } />
+            <Route path="/admin/companies/:companyId" element={
+              <ProtectedRoute allowedRoles={['admin']}><AdminCompanyView /></ProtectedRoute>
+            } />
             <Route path="/admin/jobs" element={
               <ProtectedRoute allowedRoles={['admin']}><ManageJobs /></ProtectedRoute>
             } />
             <Route path="/admin/reports" element={
               <ProtectedRoute allowedRoles={['admin']}><PlacementReports /></ProtectedRoute>
+            } />
+            <Route path="/admin/settings" element={
+              <ProtectedRoute allowedRoles={['admin']}><PlacementSettings /></ProtectedRoute>
             } />
 
             {/* 404 */}

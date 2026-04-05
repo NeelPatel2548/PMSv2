@@ -65,11 +65,34 @@ const jobSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// ---------------------------------------------------------------------------
 // Indexes
+// ---------------------------------------------------------------------------
+
+// company: look up all jobs posted by a company
+// Query: Job.find({ company: companyId })
 jobSchema.index({ company: 1 });
-jobSchema.index({ status: 1 });
+
+// Compound: student job listing filter — the primary query students see
+// Query: Job.find({ status: 'open', minCGPA: { $lte: studentCGPA } })
+// status first (equality / low cardinality), minCGPA second (range)
+jobSchema.index({ status: 1, minCGPA: 1 });
+
+// eligibleBranches: multikey index — MongoDB automatically indexes each
+// element of the array, enabling fast $in / $elemMatch queries
+// Query: Job.find({ eligibleBranches: { $in: ['CSE', 'IT'] } })
+jobSchema.index({ eligibleBranches: 1 });
+
+// jobType: students filter by fulltime vs internship
+// Query: Job.find({ jobType: 'internship', status: 'open' })
 jobSchema.index({ jobType: 1 });
-jobSchema.index({ minCGPA: 1 });
+
+// createdAt descending: "latest jobs first" on the student dashboard
+// Query: Job.find({ status: 'open' }).sort({ createdAt: -1 })
+jobSchema.index({ createdAt: -1 });
+
+// deadline: background job / admin query for expired listings
+// Query: Job.find({ deadline: { $lt: new Date() }, status: 'open' })
 jobSchema.index({ deadline: 1 });
 
 module.exports = mongoose.model('Job', jobSchema);

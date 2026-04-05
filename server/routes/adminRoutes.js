@@ -9,6 +9,7 @@ const {
   updateStudentAcademic,
   verifyStudentAcademic,
   getCompanies,
+  getCompany,
   approveCompany,
   updateCompany,
   getJobs,
@@ -17,7 +18,8 @@ const {
   toggleUserStatus,
   createAnnouncement,
   generateReport,
-  getReports
+  getReports,
+  exportUnplacedCSV
 } = require('../controllers/adminController');
 
 // All routes require authentication + admin role
@@ -26,14 +28,16 @@ router.use(protect, authorize('admin'));
 // Dashboard
 router.get('/dashboard', getDashboard);
 
-// Students — view only, suspend/unsuspend, delete
+// Students
 router.get('/students', getStudents);
+router.get('/students/export/unplaced', exportUnplacedCSV);
 router.get('/students/:id', getStudent);
 router.put('/students/:id/academic', updateStudentAcademic);
 router.put('/students/:id/verify-academic', verifyStudentAcademic);
 
 // Companies
 router.get('/companies', getCompanies);
+router.get('/companies/:id', getCompany);
 router.put('/companies/:id', [
   body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
   body('tier').optional().isIn(['tier1', 'tier2', 'mass_recruiter']).withMessage('Invalid tier'),
@@ -64,5 +68,10 @@ router.get('/reports', getReports);
 router.post('/reports', [
   body('academicYear').trim().notEmpty().withMessage('Academic year is required'),
 ], generateReport);
+
+// Settings
+const { getSettings, updateSettings } = require('../controllers/settingsController');
+router.get('/settings', getSettings);
+router.put('/settings', updateSettings);
 
 module.exports = router;

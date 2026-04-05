@@ -53,10 +53,17 @@ const JobList = () => {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-bold text-slate-800 mb-1">Eligible Jobs</h1>
         <p className="text-slate-500 text-sm mb-2">Jobs matching your CGPA, branch, and backlog criteria</p>
+<<<<<<< HEAD
         {/* Feature 3: Sort note */}
         <div className="flex items-center gap-1.5 mb-6 text-xs text-primary-600 bg-primary-50 px-3 py-2 rounded-xl border border-primary-100 w-fit">
           <Target className="w-3.5 h-3.5" />
           Jobs are sorted by skill match. Strong matches appear first.
+=======
+        {/* Sort note */}
+        <div className="inline-flex items-center gap-1.5 mb-6 text-xs text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100 font-medium">
+          <Target className="w-3.5 h-3.5" />
+          Jobs sorted by skill match — strong matches first
+>>>>>>> main
         </div>
       </motion.div>
 
@@ -68,13 +75,13 @@ const JobList = () => {
       )}
 
       <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search jobs or companies..."
-          className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none text-sm"
+          className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:shadow-sm outline-none text-sm transition-all"
         />
       </div>
 

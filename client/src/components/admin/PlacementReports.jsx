@@ -47,7 +47,7 @@ const PlacementReports = () => {
       </motion.div>
 
       {/* Generate */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-100">
+      <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-800 mb-4">Generate New Report</h2>
         {message.text && (
           <div className={`mb-3 p-2 rounded-xl text-sm ${message.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>{message.text}</div>
@@ -56,7 +56,7 @@ const PlacementReports = () => {
           <input type="text" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)}
             placeholder="e.g. 2024-25" className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none" />
           <button onClick={generateReport} disabled={generating}
-            className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors flex items-center gap-2 disabled:opacity-60">
+            className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2 disabled:opacity-60 shadow-sm">
             <PlusCircle className="w-4 h-4" />{generating ? 'Generating...' : 'Generate'}
           </button>
         </div>
@@ -72,7 +72,7 @@ const PlacementReports = () => {
         <div className="space-y-6">
           {reports.map((report, i) => (
             <motion.div key={report._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-              className="bg-white rounded-2xl p-6 border border-slate-100">
+              className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm border-l-4 border-l-indigo-500">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-800">Academic Year: {report.academicYear}</h3>
@@ -105,9 +105,9 @@ const PlacementReports = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis dataKey="branch" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip />
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '12px' }} />
                     <Bar dataKey="total" fill="#e2e8f0" name="Total" radius={[3, 3, 0, 0]} />
-                    <Bar dataKey="placed" fill="#3b82f6" name="Placed" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="placed" fill="#6366f1" name="Placed" radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}

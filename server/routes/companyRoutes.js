@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const { companyLogoUpload } = require('../middleware/upload'); // NEW
 const {
   getProfile,
   updateProfile,
+  uploadCompanyLogo, // NEW
   postJob,
   getJobs,
   getJob,
@@ -14,7 +16,8 @@ const {
   updateApplicationStatus,
   scheduleInterview,
   submitRoundResult,
-  getDashboard
+  getDashboard,
+  exportApplicantsCSV
 } = require('../controllers/companyController');
 
 // All routes require authentication + company role
@@ -30,6 +33,9 @@ router.put('/profile', [
   body('website').optional().matches(/^https?:\/\/.+/).withMessage('Must be a valid URL'),
   body('hrEmail').optional().isEmail().withMessage('Invalid HR email'),
 ], updateProfile);
+
+// Logo upload // NEW
+router.post('/profile/logo', companyLogoUpload.single('logo'), uploadCompanyLogo); // NEW
 
 // Jobs
 router.get('/jobs', getJobs);
@@ -49,6 +55,7 @@ router.patch('/jobs/:id/status', toggleJobStatus);
 
 // Applicants
 router.get('/jobs/:id/applicants', getApplicants);
+router.get('/jobs/:id/export', exportApplicantsCSV);
 router.put('/applications/:id/status', [
   body('status').isIn(['applied', 'shortlisted', 'interview', 'selected', 'rejected'])
     .withMessage('Invalid status'),

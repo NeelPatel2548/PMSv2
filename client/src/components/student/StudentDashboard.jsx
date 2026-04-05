@@ -9,7 +9,11 @@ import Loader from '../common/Loader';
 const getColor = (score) => {
   if (score <= 40) return '#E24B4A';
   if (score <= 70) return '#EF9F27';
+<<<<<<< HEAD
   if (score <= 99) return '#378ADD';
+=======
+  if (score <= 99) return '#6366F1';
+>>>>>>> main
   return '#1D9E75';
 };
 
@@ -56,12 +60,14 @@ const StudentDashboard = () => {
   ];
 
   const statCards = [
-    { label: 'Total Applied', value: stats.totalApplications, icon: Briefcase, color: 'from-blue-500 to-blue-600' },
-    { label: 'Shortlisted', value: stats.shortlisted, icon: FileCheck, color: 'from-amber-500 to-orange-500' },
-    { label: 'Interviews', value: stats.interviews, icon: Clock, color: 'from-purple-500 to-violet-500' },
-    { label: 'Selected', value: stats.selected, icon: Award, color: 'from-emerald-500 to-green-500' },
-    { label: 'Rejected', value: stats.rejected, icon: XCircle, color: 'from-red-400 to-red-500' },
+    { label: 'Total Applied', value: stats.totalApplications, icon: Briefcase, color: 'from-indigo-500 to-indigo-600', shadow: 'shadow-indigo-100' },
+    { label: 'Shortlisted', value: stats.shortlisted, icon: FileCheck, color: 'from-amber-500 to-orange-500', shadow: 'shadow-amber-100' },
+    { label: 'Interviews', value: stats.interviews, icon: Clock, color: 'from-purple-500 to-violet-500', shadow: 'shadow-purple-100' },
+    { label: 'Selected', value: stats.selected, icon: Award, color: 'from-emerald-500 to-green-500', shadow: 'shadow-emerald-100' },
+    { label: 'Rejected', value: stats.rejected, icon: XCircle, color: 'from-red-400 to-red-500', shadow: 'shadow-red-100' },
   ];
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -96,7 +102,7 @@ const StudentDashboard = () => {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statCards.map((card, i) => (
           <motion.div key={card.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+            className={`bg-white rounded-2xl p-5 border border-slate-100 shadow-sm ${card.shadow} hover:shadow-md transition-shadow`}>
             <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-3`}>
               <card.icon className="w-5 h-5 text-white" />
             </div>
@@ -108,7 +114,11 @@ const StudentDashboard = () => {
 
       {/* ═══════════════ Profile Completion Chart ═══════════════ */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+<<<<<<< HEAD
         className="bg-white rounded-2xl p-6 border border-slate-100">
+=======
+        className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+>>>>>>> main
         <h2 className="text-lg font-semibold text-slate-800 mb-5">Profile Completion</h2>
         <div className="flex flex-col md:flex-row items-center gap-8">
           {/* Donut Chart */}
@@ -157,7 +167,11 @@ const StudentDashboard = () => {
                         className="h-full rounded-full transition-all duration-500"
                         style={{
                           width: `${section.max > 0 ? (section.score / section.max) * 100 : 0}%`,
+<<<<<<< HEAD
                           backgroundColor: isFull ? '#1D9E75' : section.score > 0 ? '#378ADD' : '#E24B4A'
+=======
+                          backgroundColor: isFull ? '#1D9E75' : section.score > 0 ? '#6366F1' : '#E24B4A'
+>>>>>>> main
                         }}
                       />
                     </div>
@@ -176,7 +190,11 @@ const StudentDashboard = () => {
           <div className="mt-5 flex items-center gap-2 p-3 rounded-xl bg-slate-50 border border-slate-100 text-sm text-slate-500">
             <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
             Complete your profile to unlock job applications.
+<<<<<<< HEAD
             <Link to="/student/profile" className="text-primary-600 font-medium ml-auto hover:text-primary-700 flex items-center gap-1">
+=======
+            <Link to="/student/profile" className="text-indigo-600 font-medium ml-auto hover:text-indigo-700 flex items-center gap-1">
+>>>>>>> main
               Go to Profile <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
@@ -185,10 +203,10 @@ const StudentDashboard = () => {
 
       {/* Active Jobs For You */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-        className="bg-white rounded-2xl p-6 border border-slate-100">
+        className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-slate-800">Active Jobs For You</h2>
-          <Link to="/student/jobs" className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
+          <Link to="/student/jobs" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
             View All <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
@@ -198,7 +216,11 @@ const StudentDashboard = () => {
             {completionScore < 100 ? (
               <>
                 <p className="text-slate-400">Complete your profile to see matching jobs</p>
+<<<<<<< HEAD
                 <Link to="/student/profile" className="text-primary-600 text-sm font-medium mt-1 inline-block">Go to Profile →</Link>
+=======
+                <Link to="/student/profile" className="text-indigo-600 text-sm font-medium mt-1 inline-block">Go to Profile →</Link>
+>>>>>>> main
               </>
             ) : (
               <p className="text-slate-400">No eligible jobs available right now. Check back later.</p>
@@ -207,9 +229,15 @@ const StudentDashboard = () => {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {eligibleJobs.map(job => (
+<<<<<<< HEAD
               <div key={job._id} className="p-4 rounded-xl bg-slate-50 border border-slate-100 hover:shadow-sm transition-shadow">
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-xs text-primary-600 font-semibold">{job.company?.name}</p>
+=======
+              <div key={job._id} className="p-4 rounded-xl bg-slate-50 border border-slate-100 hover:shadow-sm hover:border-indigo-100 transition-all">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs text-indigo-600 font-semibold">{job.company?.name}</p>
+>>>>>>> main
                   {job.matchLevel === 'strong' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">🎯 Match</span>}
                 </div>
                 <p className="font-medium text-slate-800 truncate">{job.title}</p>
@@ -228,27 +256,34 @@ const StudentDashboard = () => {
 
       {/* Upcoming Interviews */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-        className="bg-white rounded-2xl p-6 border border-slate-100">
+        className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-slate-800">Upcoming Interviews</h2>
-          <Link to="/student/interviews" className="text-sm text-primary-600 hover:text-primary-700 font-medium">View All</Link>
+          <Link to="/student/interviews" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">View All</Link>
         </div>
         {upcomingInterviews?.length === 0 ? (
           <p className="text-center text-slate-400 py-6">No upcoming interviews.</p>
         ) : (
           <div className="space-y-3">
-            {upcomingInterviews?.map(int => (
-              <div key={int._id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50">
-                <div>
-                  <p className="font-medium text-slate-700">{int.job?.title}</p>
-                  <p className="text-xs text-slate-400">{int.company?.name} • {int.roundName}</p>
+            {upcomingInterviews?.map(int => {
+              const d = new Date(int.scheduledAt);
+              return (
+                <div key={int._id} className="flex items-center gap-4 p-3 rounded-xl bg-slate-50 hover:bg-slate-100/80 transition-colors">
+                  {/* Date block */}
+                  <div className="bg-indigo-600 rounded-xl min-w-[56px] h-[56px] flex flex-col items-center justify-center text-white flex-shrink-0 shadow-sm shadow-indigo-200">
+                    <span className="text-[10px] uppercase font-semibold opacity-80">{months[d.getMonth()]}</span>
+                    <span className="text-xl font-bold leading-tight">{d.getDate()}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-slate-700 truncate">{int.job?.title}</p>
+                    <p className="text-xs text-slate-400 truncate">{int.company?.name} • {int.roundName}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-sm font-semibold text-indigo-600">{d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-primary-600">{new Date(int.scheduledAt).toLocaleDateString()}</p>
-                  <p className="text-xs text-slate-400">{new Date(int.scheduledAt).toLocaleTimeString()}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </motion.div>
@@ -257,14 +292,36 @@ const StudentDashboard = () => {
       {offers?.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
           className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-2xl p-6 border border-green-100">
-          <h2 className="text-lg font-semibold text-green-800 mb-4">🎉 Your Offers</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-green-800">🎉 Your Offers</h2>
+            <Link to="/student/applications" className="text-sm text-green-700 hover:text-green-800 font-medium">
+              Manage Offers →
+            </Link>
+          </div>
           <div className="space-y-2">
-            {offers.map(offer => (
-              <div key={offer._id} className="p-3 rounded-xl bg-white/60 border border-green-100">
-                <p className="font-medium text-green-800">{offer.job?.title || 'Offer'}</p>
-                {offer.offeredPackage && <p className="text-sm text-green-600">Package: {offer.offeredPackage}</p>}
-              </div>
-            ))}
+            {offers.map(offer => {
+              const offerBadge = {
+                pending: { bg: 'bg-amber-100 text-amber-700', label: '⏳ Pending Response' },
+                accepted: { bg: 'bg-emerald-100 text-emerald-800', label: '✅ Accepted' },
+                declined: { bg: 'bg-red-100 text-red-700', label: '❌ Declined' },
+              };
+              const badge = offerBadge[offer.offerStatus] || offerBadge.pending;
+              return (
+                <div key={offer._id} className={`p-4 rounded-xl border ${
+                  offer.offerStatus === 'accepted' ? 'bg-emerald-100/60 border-emerald-200' : 'bg-white/60 border-green-100'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-green-800">{offer.job?.title || 'Offer'}</p>
+                      {offer.offeredPackage && <p className="text-sm text-green-600 mt-0.5">📦 Package: {offer.offeredPackage}</p>}
+                    </div>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${badge.bg}`}>
+                      {badge.label}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </motion.div>
       )}

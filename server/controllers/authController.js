@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const Student = require('../models/Student');
@@ -7,14 +8,35 @@ const { generateOTP, hashOTP, verifyOTP, getOTPExpiry } = require('../services/o
 const { sendOTPEmail } = require('../services/emailService');
 const { generateToken, setTokenCookie } = require('../middleware/authMiddleware');
 
+// ---------------------------------------------------------------------------
 // OTP Bypass helpers — NEVER active in production
+// ---------------------------------------------------------------------------
 const isProduction = () => process.env.NODE_ENV === 'production';
 const isBypassMode = () => !isProduction() && process.env.BYPASS_OTP === 'true';
 const isMagicCode = (otp) => !isProduction() && process.env.BYPASS_OTP_CODE && otp === process.env.BYPASS_OTP_CODE;
 
-// @desc    Register a new user
+// ---------------------------------------------------------------------------
+// In-memory store for pending registrations (pre-OTP verification)
+// Key: email (lowercase)
+// Value: { name, email, hashedPassword, role, otp, otpExpiry }
+// ---------------------------------------------------------------------------
+const pendingRegistrations = new Map();
+
+// Clean up expired entries every 15 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [email, data] of pendingRegistrations.entries()) {
+    if (data.otpExpiry < now) {
+      pendingRegistrations.delete(email);
+    }
+  }
+}, 15 * 60 * 1000);
+
+// ---------------------------------------------------------------------------
+// @desc    Register a new user — stores temporarily, sends OTP
 // @route   POST /api/auth/register
 // @access  Public
+// ---------------------------------------------------------------------------
 exports.register = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -23,34 +45,29 @@ exports.register = async (req, res) => {
     }
 
     const { name, email, password, role } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    // Check if email already exists in DB
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return error(res, 'Email already registered', 400);
     }
 
-    // Create user (password is hashed by pre-save hook)
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role
-    });
-
-    // BYPASS MODE: auto-verify, create profile, issue JWT directly
+    // BYPASS MODE: skip OTP, create User + role doc directly and return
     if (isBypassMode()) {
-      user.isVerified = true;
-      user.otp = null;
-      user.otpExpiry = null;
-      user.otpAttempts = 0;
-      await user.save();
+      const hashedPassword = await bcrypt.hash(password, 12);
+      const user = await User.create({
+        name,
+        email: normalizedEmail,
+        password: hashedPassword,
+        role,
+        isVerified: true
+      });
 
-      // Auto-create role-specific document
-      if (user.role === 'student') {
+      if (role === 'student') {
         const existing = await Student.findOne({ user: user._id });
         if (!existing) await Student.create({ user: user._id });
-      } else if (user.role === 'company') {
+      } else if (role === 'company') {
         const existing = await Company.findOne({ user: user._id });
         if (!existing) await Company.create({ user: user._id, name: user.name });
       }
@@ -68,18 +85,34 @@ exports.register = async (req, res) => {
       }, 'Registration successful (OTP bypassed)', 201);
     }
 
-    // Normal flow: generate and send OTP
-    const otp = generateOTP();
-    user.otp = await hashOTP(otp);
-    user.otpExpiry = getOTPExpiry(10);
-    user.otpAttempts = 0;
-    await user.save();
+    // Hash password now — store in memory, NOT in DB yet
+    const hashedPassword = await bcrypt.hash(password, 12);
 
+<<<<<<< HEAD
     // Bug Fix 3: If email fails, delete the ghost user AND linked role doc
+=======
+    // Generate OTP
+    const otp = generateOTP();
+    const otpExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    // Store pending registration in memory
+    pendingRegistrations.set(normalizedEmail, {
+      name,
+      email: normalizedEmail,
+      hashedPassword,
+      role,
+      otp,
+      otpExpiry
+    });
+
+
+    // Send OTP email — if it fails, remove from map so user can retry
+>>>>>>> main
     try {
-      await sendOTPEmail(email, otp, 'verification');
+      await sendOTPEmail(normalizedEmail, otp, 'verification');
     } catch (emailError) {
       console.error('Email send failed during registration:', emailError);
+<<<<<<< HEAD
       // Rollback: delete linked Student or Company doc first
       if (role === 'student') {
         await Student.findOneAndDelete({ user: user._id });
@@ -87,19 +120,24 @@ exports.register = async (req, res) => {
         await Company.findOneAndDelete({ user: user._id });
       }
       await User.findByIdAndDelete(user._id);
+=======
+      pendingRegistrations.delete(normalizedEmail);
+>>>>>>> main
       return error(res, 'Failed to send verification email. Please try again.', 500);
     }
 
-    return success(res, null, 'OTP sent to email. Please verify your account.', 201);
+    return success(res, null, 'OTP sent to your email. Please verify to complete registration.');
   } catch (err) {
     console.error('Register error:', err);
     return error(res, 'Registration failed. Please try again.', 500);
   }
 };
 
-// @desc    Verify OTP (registration)
+// ---------------------------------------------------------------------------
+// @desc    Verify registration OTP — creates User in DB on success
 // @route   POST /api/auth/verify-otp
 // @access  Public
+// ---------------------------------------------------------------------------
 exports.verifyOTP = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -108,83 +146,149 @@ exports.verifyOTP = async (req, res) => {
     }
 
     const { email, otp } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return error(res, 'User not found', 404);
+
+    // Look up pending registration
+    const pending = pendingRegistrations.get(normalizedEmail);
+
+    if (!pending) {
+      return error(res, 'Session expired. Please register again.', 400);
     }
 
-    // BYPASS: magic code or bypass mode skips all OTP checks
+    // Check OTP expiry
+    if (pending.otpExpiry < Date.now()) {
+      pendingRegistrations.delete(normalizedEmail);
+      return error(res, 'OTP expired. Please register again.', 400);
+    }
+
+    // Skip OTP check in bypass / magic-code mode
     const bypassOTP = isBypassMode() || isMagicCode(otp);
 
     if (!bypassOTP) {
-      // Check OTP attempts — block if >= 5
-      if (user.otpAttempts >= 5) {
-        return error(res, 'Too many OTP attempts. Please request a new OTP.', 429);
-      }
-
-      // Check if OTP is expired
-      if (!user.otpExpiry || new Date() > user.otpExpiry) {
-        return error(res, 'OTP has expired. Please request a new one.', 400);
-      }
-
-      // Check if OTP exists
-      if (!user.otp) {
-        return error(res, 'No OTP found. Please request a new one.', 400);
-      }
-
-      // Verify OTP
-      const isValid = await verifyOTP(otp, user.otp);
-
-      if (!isValid) {
-        // Increment attempts on failure
-        user.otpAttempts += 1;
-        await user.save();
-        return error(res, `Invalid OTP. ${5 - user.otpAttempts} attempts remaining.`, 400);
+      // Compare submitted OTP with stored plain OTP
+      if (String(otp).trim() !== String(pending.otp).trim()) {
+        return error(res, 'Invalid OTP. Please try again.', 400);
       }
     }
 
-    // OTP correct — verify user
-    user.isVerified = true;
-    user.otp = null;
-    user.otpExpiry = null;
-    user.otpAttempts = 0;
-    await user.save();
 
-    // Auto-create role-specific document
-    if (user.role === 'student') {
-      const existingStudent = await Student.findOne({ user: user._id });
-      if (!existingStudent) {
-        await Student.create({ user: user._id });
+    try {
+      // OTP valid — create the User document now.
+      // Use `new User().save()` with password set directly as hash to bypass
+      // the pre-save bcrypt hook (password is already hashed from /register step).
+      const newUser = new User({
+        name: pending.name,
+        email: pending.email,
+        role: pending.role,
+        isVerified: true
+      });
+      // Assign hashed password directly — mark as NOT modified so pre-save hook skips it
+      newUser.password = pending.hashedPassword;
+      newUser.$locals.skipHash = true;
+      const user = await newUser.save();
+
+      // Create role-specific document
+      if (pending.role === 'student') {
+        const student = await Student.create({ user: user._id });
       }
-    } else if (user.role === 'company') {
-      const existingCompany = await Company.findOne({ user: user._id });
-      if (!existingCompany) {
-        await Company.create({ user: user._id, name: user.name });
+      if (pending.role === 'company') {
+        const company = await Company.create({ user: user._id, name: pending.name });
       }
+
+      // Remove from pending map
+      pendingRegistrations.delete(normalizedEmail);
+
+      // Do NOT auto-issue JWT — force the user to login (cleaner security model)
+      return success(res, null, 'Account created successfully. Please log in.', 201);
+    } catch (createError) {
+      console.error('[VERIFY-OTP] CREATION FAILED:', {
+        message: createError.message,
+        name: createError.name,
+        code: createError.code,
+        errors: JSON.stringify(createError.errors, null, 2)
+      });
+      return res.status(500).json({
+        message: createError.message,
+        details: createError.errors
+      });
     }
-
-    // Generate token and set cookie
-    const token = generateToken(user._id);
-    setTokenCookie(res, token);
-
-    return success(res, {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      isVerified: user.isVerified,
-      profileCompleted: user.profileCompleted
-    }, 'Email verified successfully');
   } catch (err) {
-    console.error('Verify OTP error:', err);
-    return error(res, 'OTP verification failed', 500);
+    console.error('[VERIFY-OTP] OUTER ERROR:', {
+      message: err.message,
+      name: err.name,
+      errors: JSON.stringify(err.errors, null, 2),
+      stack: err.stack
+    });
+    return res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Login Step 1 — verify credentials, send OTP
+// ---------------------------------------------------------------------------
+// @desc    Resend OTP for pending registration
+// @route   POST /api/auth/resend-otp
+// @access  Public
+// ---------------------------------------------------------------------------
+exports.resendOTP = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return error(res, 'Validation failed', 400, errors.array());
+    }
+
+    const { email, purpose } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // BYPASS MODE
+    if (isBypassMode()) {
+      return success(res, null, 'OTP resent (bypass mode — no email sent).');
+    }
+
+    // Check if this is a pending registration resend
+    const pending = pendingRegistrations.get(normalizedEmail);
+    if (pending) {
+      const otp = generateOTP();
+      pending.otp = otp;
+      pending.otpExpiry = Date.now() + 10 * 60 * 1000;
+      pendingRegistrations.set(normalizedEmail, pending);
+
+      try {
+        await sendOTPEmail(normalizedEmail, otp, 'verification');
+      } catch (emailError) {
+        console.error('Resend OTP email failed:', emailError);
+        return error(res, 'Failed to resend OTP email. Please try again.', 500);
+      }
+
+      return success(res, null, 'New OTP sent to your email.');
+    }
+
+    // Otherwise, handle login OTP resend (user exists in DB)
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      return error(res, 'No pending session found for this email. Please register or login again.', 400);
+    }
+
+    const otp = generateOTP();
+    user.otp = await hashOTP(otp);
+    user.otpExpiry = getOTPExpiry(purpose === 'login' ? 5 : 10);
+    user.otpAttempts = 0;
+    await user.save();
+
+    const otpPurpose = purpose || 'verification';
+    await sendOTPEmail(normalizedEmail, otp, otpPurpose);
+
+    return success(res, null, 'OTP resent to email.');
+  } catch (err) {
+    console.error('Resend OTP error:', err);
+    return error(res, 'Failed to resend OTP', 500);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// @desc    Login Step 1 — verify credentials, send login OTP
 // @route   POST /api/auth/login
 // @access  Public
+// ---------------------------------------------------------------------------
 exports.login = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -194,26 +298,23 @@ exports.login = async (req, res) => {
 
     const { email, password } = req.body;
 
-    // Find user with password
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return error(res, 'Invalid email or password', 401);
     }
 
-    // Check if active
     if (!user.isActive) {
       return error(res, 'Account has been suspended. Contact admin.', 403);
     }
 
-    // Compare password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return error(res, 'Invalid email or password', 401);
     }
 
-    // Check if verified — if not, send verification OTP
+    // Account exists in DB but isVerified=false should not happen anymore
+    // (we only create User after OTP verification), but handle gracefully
     if (!user.isVerified) {
-      // BYPASS MODE: auto-verify unverified accounts on login
       if (isBypassMode()) {
         user.isVerified = true;
         user.otp = null;
@@ -221,7 +322,6 @@ exports.login = async (req, res) => {
         user.otpAttempts = 0;
         await user.save();
 
-        // Auto-create role-specific document
         if (user.role === 'student') {
           const existing = await Student.findOne({ user: user._id });
           if (!existing) await Student.create({ user: user._id });
@@ -240,7 +340,7 @@ exports.login = async (req, res) => {
       }
     }
 
-    // Admin OR bypass mode — direct login (skip OTP)
+    // Admin or bypass — direct login without login OTP
     if (user.role === 'admin' || isBypassMode()) {
       const token = generateToken(user._id);
       setTokenCookie(res, token);
@@ -254,11 +354,15 @@ exports.login = async (req, res) => {
       }, 'Login successful');
     }
 
-    // Send login OTP (5 min expiry) for non-admin users
+    // Send login OTP (5 min) for students and companies
     const otp = generateOTP();
     user.otp = await hashOTP(otp);
     user.otpExpiry = getOTPExpiry(5);
+<<<<<<< HEAD
     user.otpAttempts = 0; // Bug Fix 2: reset attempts when new OTP generated
+=======
+    user.otpAttempts = 0;
+>>>>>>> main
     await user.save();
 
     await sendOTPEmail(email, otp, 'login');
@@ -270,9 +374,11 @@ exports.login = async (req, res) => {
   }
 };
 
+// ---------------------------------------------------------------------------
 // @desc    Login Step 2 — verify login OTP
 // @route   POST /api/auth/login/verify
 // @access  Public
+// ---------------------------------------------------------------------------
 exports.loginVerify = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -287,16 +393,13 @@ exports.loginVerify = async (req, res) => {
       return error(res, 'User not found', 404);
     }
 
-    // BYPASS: magic code or bypass mode skips all OTP checks
     const bypassOTP = isBypassMode() || isMagicCode(otp);
 
     if (!bypassOTP) {
-      // Check attempts BEFORE comparing
       if (user.otpAttempts >= 5) {
         return error(res, 'Too many OTP attempts. Please request a new OTP.', 429);
       }
 
-      // Check expiry
       if (!user.otpExpiry || new Date() > user.otpExpiry) {
         return error(res, 'OTP has expired. Please login again.', 400);
       }
@@ -305,7 +408,6 @@ exports.loginVerify = async (req, res) => {
         return error(res, 'No OTP found. Please login again.', 400);
       }
 
-      // Verify OTP
       const isValid = await verifyOTP(otp, user.otp);
 
       if (!isValid) {
@@ -315,13 +417,11 @@ exports.loginVerify = async (req, res) => {
       }
     }
 
-    // Success — clear OTP and reset attempts
     user.otp = null;
     user.otpExpiry = null;
     user.otpAttempts = 0;
     await user.save();
 
-    // Generate token and set cookie
     const token = generateToken(user._id);
     setTokenCookie(res, token);
 
@@ -340,9 +440,11 @@ exports.loginVerify = async (req, res) => {
   }
 };
 
+// ---------------------------------------------------------------------------
 // @desc    Logout
 // @route   POST /api/auth/logout
 // @access  Private
+// ---------------------------------------------------------------------------
 exports.logout = async (req, res) => {
   try {
     res.clearCookie('pms_token', {
@@ -357,6 +459,7 @@ exports.logout = async (req, res) => {
   }
 };
 
+<<<<<<< HEAD
 // @desc    Resend OTP
 // @route   POST /api/auth/resend-otp
 // @access  Public
@@ -396,9 +499,13 @@ exports.resendOTP = async (req, res) => {
   }
 };
 
+=======
+// ---------------------------------------------------------------------------
+>>>>>>> main
 // @desc    Forgot password — send OTP
 // @route   POST /api/auth/forgot-password
 // @access  Public
+// ---------------------------------------------------------------------------
 exports.forgotPassword = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -417,7 +524,6 @@ exports.forgotPassword = async (req, res) => {
       return error(res, 'Account has been suspended', 403);
     }
 
-    // Generate reset OTP
     const otp = generateOTP();
     user.otp = await hashOTP(otp);
     user.otpExpiry = getOTPExpiry(10);
@@ -434,9 +540,11 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
+// ---------------------------------------------------------------------------
 // @desc    Verify forgot-password OTP
 // @route   POST /api/auth/verify-reset-otp
 // @access  Public
+// ---------------------------------------------------------------------------
 exports.verifyResetOTP = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -471,7 +579,6 @@ exports.verifyResetOTP = async (req, res) => {
       return error(res, `Invalid OTP. ${5 - user.otpAttempts} attempts remaining.`, 400);
     }
 
-    // Mark as verified for reset
     user.otp = null;
     user.otpExpiry = null;
     user.otpAttempts = 0;
@@ -485,9 +592,11 @@ exports.verifyResetOTP = async (req, res) => {
   }
 };
 
+// ---------------------------------------------------------------------------
 // @desc    Reset password
 // @route   POST /api/auth/reset-password
 // @access  Public
+// ---------------------------------------------------------------------------
 exports.resetPassword = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -506,7 +615,8 @@ exports.resetPassword = async (req, res) => {
       return error(res, 'Please verify OTP before resetting password.', 400);
     }
 
-    user.password = newPassword; // Will be hashed by pre-save hook
+    // Will be hashed by pre-save hook
+    user.password = newPassword;
     user.otpVerifiedForReset = false;
     await user.save();
 
@@ -517,9 +627,11 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
+// ---------------------------------------------------------------------------
 // @desc    Get current user (check auth status)
 // @route   GET /api/auth/me
 // @access  Private
+// ---------------------------------------------------------------------------
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);

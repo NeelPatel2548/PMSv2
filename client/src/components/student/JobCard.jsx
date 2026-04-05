@@ -4,6 +4,20 @@ import { MapPin, Clock, Briefcase, Award, Target, AlertCircle, ArrowRight } from
 import { Link } from 'react-router-dom';
 import { formatTier } from '../common/TierSelector';
 
+<<<<<<< HEAD
+=======
+// Consistent avatar color based on first letter
+const avatarColors = {
+  A: 'bg-red-500', B: 'bg-orange-500', C: 'bg-amber-500', D: 'bg-yellow-500',
+  E: 'bg-lime-500', F: 'bg-green-500', G: 'bg-emerald-500', H: 'bg-teal-500',
+  I: 'bg-cyan-500', J: 'bg-sky-500', K: 'bg-blue-500', L: 'bg-indigo-500',
+  M: 'bg-violet-500', N: 'bg-purple-500', O: 'bg-fuchsia-500', P: 'bg-pink-500',
+  Q: 'bg-rose-500', R: 'bg-red-600', S: 'bg-indigo-600', T: 'bg-emerald-600',
+  U: 'bg-blue-600', V: 'bg-purple-600', W: 'bg-teal-600', X: 'bg-amber-600',
+  Y: 'bg-cyan-600', Z: 'bg-rose-600',
+};
+
+>>>>>>> main
 const JobCard = ({ job, onApply, applying, studentProfile }) => {
   const [applyError, setApplyError] = useState('');
 
@@ -18,7 +32,11 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
 
   let buttonText = 'Apply Now';
   let buttonDisabled = applying || isExpired;
+<<<<<<< HEAD
   let buttonClass = 'bg-primary-600 text-white hover:bg-primary-700';
+=======
+  let buttonClass = 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-200';
+>>>>>>> main
 
   if (isExpired) {
     buttonText = 'Closed';
@@ -50,7 +68,11 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
     }
   };
 
+<<<<<<< HEAD
   // Feature 3: Match badge
+=======
+  // Match badge
+>>>>>>> main
   const matchBadge = job.matchLevel === 'strong' ? (
     <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
       <Target className="w-3 h-3" /> Strong Match 🎯
@@ -60,24 +82,36 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
       Partial Match
     </span>
   ) : null;
+<<<<<<< HEAD
+=======
+
+  const firstLetter = (job.company?.name?.charAt(0) || 'C').toUpperCase();
+  const avatarBg = avatarColors[firstLetter] || 'bg-slate-500';
+>>>>>>> main
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl p-5 border border-slate-100 hover:shadow-lg transition-all duration-300 group"
+      className="bg-white rounded-2xl p-5 border border-slate-100 hover:shadow-md hover:-translate-y-0.5 hover:border-indigo-100 transition-all duration-300 group"
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-lg font-bold text-slate-600 overflow-hidden">
-            {job.company?.logo ? (
-              <img src={job.company.logo} alt="" className="w-full h-full object-cover" />
-            ) : (
-              job.company?.name?.charAt(0) || 'C'
-            )}
+          <div className={`w-12 h-12 rounded-xl ${avatarBg} flex items-center justify-center text-lg font-bold text-white overflow-hidden shadow-sm`}>
+            {job.company?.logo?.url ? ( // NEW — was job.company?.logo (string), now .logo.url (object)
+              <img
+                src={job.company.logo.url} // NEW
+                alt=""
+                className="w-full h-full object-contain bg-white p-0.5" // NEW — object-contain for logos
+                onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex'; }} // NEW
+              />
+            ) : null}
+            <span className="flex items-center justify-center w-full h-full" style={{ display: job.company?.logo?.url ? 'none' : 'flex' }}> // NEW
+              {firstLetter} // NEW
+            </span> // NEW
           </div>
           <div>
-            <h3 className="font-semibold text-slate-800 group-hover:text-primary-600 transition-colors">{job.title}</h3>
+            <h3 className="font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors">{job.title}</h3>
             <p className="text-sm text-slate-500">{job.company?.name}</p>
           </div>
         </div>
@@ -107,7 +141,11 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
 
       {job.description && <p className="text-sm text-slate-500 line-clamp-2 mb-3">{job.description}</p>}
 
+<<<<<<< HEAD
       {/* Feature 3: Skills with match highlighting */}
+=======
+      {/* Skills with match highlighting */}
+>>>>>>> main
       {job.requiredSkills?.length > 0 && (
         <div className="mb-3">
           <div className="flex flex-wrap gap-1.5">
@@ -116,8 +154,13 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
               return (
                 <span key={i} className={`px-2.5 py-0.5 rounded-lg text-xs font-medium border ${
                   isMatched
+<<<<<<< HEAD
                     ? 'bg-green-50 text-green-700 border-green-200'
                     : 'bg-slate-50 text-slate-400 border-slate-200'
+=======
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-slate-100 text-slate-500 border-slate-200'
+>>>>>>> main
                 }`}>
                   {skill} {isMatched ? '✓' : '✗'}
                 </span>
@@ -138,7 +181,11 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <div>
             <p>{applyError}</p>
+<<<<<<< HEAD
             <Link to="/student/profile" className="inline-flex items-center gap-1 mt-1 text-primary-600 font-medium text-xs hover:text-primary-700">
+=======
+            <Link to="/student/profile" className="inline-flex items-center gap-1 mt-1 text-indigo-600 font-medium text-xs hover:text-indigo-700">
+>>>>>>> main
               Complete Profile <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
@@ -159,7 +206,11 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
         {!isVerified && !isExpired ? (
           <button
             onClick={() => handleApply(job._id)}
+<<<<<<< HEAD
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 ${buttonClass}`}
+=======
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-50 ${buttonClass}`}
+>>>>>>> main
           >
             {buttonText}
           </button>
@@ -172,7 +223,11 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
           <button
             onClick={() => handleApply(job._id)}
             disabled={buttonDisabled}
+<<<<<<< HEAD
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${buttonClass}`}
+=======
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${buttonClass}`}
+>>>>>>> main
           >
             {applying ? 'Applying...' : isExpired ? 'Closed' : 'Apply Now'}
           </button>
