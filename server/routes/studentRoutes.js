@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const { protect, authorize } = require('../middleware/authMiddleware');
-const { upload } = require('../middleware/upload');
+const { upload, profilePictureUpload } = require('../middleware/upload'); // NEW — added profilePictureUpload
 const {
   getProfile,
   updateProfile,
+  uploadProfilePicture, // NEW
   uploadResume,
   getEligibleJobs,
   applyToJob,
@@ -29,6 +30,9 @@ router.put('/profile', [
   body('linkedin').optional().matches(/^https?:\/\/.+/).withMessage('Must be a valid URL'),
   body('github').optional().matches(/^https?:\/\/.+/).withMessage('Must be a valid URL'),
 ], updateProfile);
+
+// Profile picture upload // NEW
+router.post('/profile/picture', profilePictureUpload.single('profilePicture'), uploadProfilePicture); // NEW
 
 // Resume upload
 router.post('/resume', upload.single('resume'), uploadResume);

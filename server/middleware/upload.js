@@ -9,20 +9,21 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Cloudinary storage for resume PDFs
-const storage = new CloudinaryStorage({
+// ===========================================================================
+// 1. RESUME UPLOAD — existing config, unchanged
+// ===========================================================================
+
+const resumeStorage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: 'pms-resumes',
     allowed_formats: ['pdf'],
     resource_type: 'raw',
-    // Unique filename per upload to avoid collisions
     public_id: (req, file) => `resume-${req.user.id}-${Date.now()}`
   }
 });
 
-// File filter — reject anything that isn't PDF at the mimetype level
-const fileFilter = (req, file, cb) => {
+const resumeFilter = (req, file, cb) => {
   if (file.mimetype === 'application/pdf') {
     cb(null, true);
   } else {
@@ -30,14 +31,95 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Multer upload instance (same export name as before — no controller changes needed)
-const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB
+const resumeUpload = multer({ // NEW — renamed from `upload` to `resumeUpload` for clarity
+  storage: resumeStorage,
+  fileFilter: resumeFilter,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
+
+// Keep the old `upload` export name for backward compatibility with existing routes
+const upload = resumeUpload; // NEW — alias so studentRoutes.js doesn't need changes
+
+// ===========================================================================
+// 2. PROFILE PICTURE UPLOAD — student headshots // NEW
+// ===========================================================================
+
+const profilePictureStorage = new CloudinaryStorage({ // NEW
+  cloudinary,
+  params: {
+    folder: 'pms-profile-pictures', // NEW
+    resource_type: 'image', // NEW
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'], // NEW
+    // 400×400 face-aware crop, auto quality & format (WebP served to browsers that support it)
+    transformation: [{ // NEW
+      width: 400,
+      height: 400,
+      crop: 'fill',
+      gravity: 'face',
+      quality: 'auto',
+      fetch_format: 'auto'
+    }],
+    public_id: (req, file) => `profile-${req.user.id}-${Date.now()}` // NEW
   }
 });
+
+const profilePictureFilter = (req, file, cb) => { // NEW
+  const allowed = ['image/jpeg', 'image/png', 'image/webp']; // NEW
+  if (allowed.includes(file.mimetype)) { // NEW
+    cb(null, true); // NEW
+  } else { // NEW
+    cb(new Error('Only JPG, PNG, WEBP images allowed'), false); // NEW
+  } // NEW
+}; // NEW
+
+const profilePictureUpload = multer({ // NEW
+  storage: profilePictureStorage, // NEW
+  fileFilter: profilePictureFilter, // NEW
+  limits: { fileSize: 2 * 1024 * 1024 } // 2MB // NEW
+}); // NEW
+
+// ===========================================================================
+// 3. COMPANY LOGO UPLOAD // NEW
+// ===========================================================================
+
+const companyLogoStorage = new CloudinaryStorage({ // NEW
+  cloudinary,
+  params: {
+    folder: 'pms-company-logos', // NEW
+    resource_type: 'image', // NEW
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'svg'], // NEW
+    // pad = letterbox / pillarbox — preserves aspect ratio with white fill
+    // This prevents logos from being distorted or cropped
+    transformation: [{ // NEW
+      width: 300,
+      height: 300,
+      crop: 'pad',
+      background: 'white',
+      quality: 'auto',
+      fetch_format: 'auto'
+    }],
+    public_id: (req, file) => `logo-${req.user.id}-${Date.now()}` // NEW
+  }
+});
+
+const companyLogoFilter = (req, file, cb) => { // NEW
+  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']; // NEW
+  if (allowed.includes(file.mimetype)) { // NEW
+    cb(null, true); // NEW
+  } else { // NEW
+    cb(new Error('Only JPG, PNG, WEBP, SVG allowed'), false); // NEW
+  } // NEW
+}; // NEW
+
+const companyLogoUpload = multer({ // NEW
+  storage: companyLogoStorage, // NEW
+  fileFilter: companyLogoFilter, // NEW
+  limits: { fileSize: 2 * 1024 * 1024 } // 2MB // NEW
+}); // NEW
+
+// ===========================================================================
+// 4. CLOUDINARY DELETE HELPERS
+// ===========================================================================
 
 /**
  * Delete a resume from Cloudinary by its secure URL.
@@ -47,11 +129,9 @@ const upload = multer({
 const deleteCloudinaryFile = async (url) => {
   if (!url || !url.includes('cloudinary')) return;
   try {
-    // Extract public_id from URL: .../pms-resumes/resume-userId-timestamp.pdf
     const parts = url.split('/');
     const folderIndex = parts.indexOf('pms-resumes');
     if (folderIndex === -1) return;
-    // public_id = pms-resumes/resume-userId-timestamp (without extension)
     const filenameWithExt = parts.slice(folderIndex).join('/');
     const publicId = filenameWithExt.replace(/\.[^/.]+$/, '');
     await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
@@ -60,4 +140,33 @@ const deleteCloudinaryFile = async (url) => {
   }
 };
 
-module.exports = { upload, deleteCloudinaryFile };
+/**
+ * Delete any image (profile picture or company logo) from Cloudinary
+ * using its stored public_id.
+ *
+ * multer-storage-cloudinary stores the public_id in req.file.filename.
+ * We store that value in DB as profilePicture.publicId / logo.publicId
+ * and pass it here when the user replaces their image.
+ *
+ * @param {string} publicId  - The Cloudinary public_id (stored in DB)
+ * @param {string} resourceType - 'image' | 'raw' | 'video'
+ */ // NEW
+const deleteFromCloudinary = async (publicId, resourceType = 'image') => { // NEW
+  if (!publicId) return; // NEW
+  try { // NEW
+    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType }); // NEW
+    console.log(`Cloudinary: deleted ${resourceType} → ${publicId}`); // NEW
+  } catch (err) { // NEW
+    // Non-fatal: log but don't crash the upload flow
+    console.error('Cloudinary delete error (non-fatal):', err.message); // NEW
+  } // NEW
+}; // NEW
+
+module.exports = {
+  upload,                   // backward-compat alias for resume upload
+  resumeUpload,             // explicit named export
+  profilePictureUpload,     // NEW
+  companyLogoUpload,        // NEW
+  deleteCloudinaryFile,     // existing URL-based deleter for resumes
+  deleteFromCloudinary      // NEW — publicId-based deleter for images
+};

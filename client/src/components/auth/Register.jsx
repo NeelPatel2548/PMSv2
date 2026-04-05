@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { UserPlus, Mail, Lock, Eye, EyeOff, User, ArrowRight, GraduationCap, Building2, Check } from 'lucide-react';
-import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const Register = () => {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     name: '', email: '', password: '', confirmPassword: '', role: 'student'
   });
@@ -42,16 +43,9 @@ const Register = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await api.post('/auth/register', {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        role: formData.role
-      });
-
-      if (res.data.success) {
-        navigate('/verify-otp', { state: { email: formData.email, purpose: 'verification' } });
-      }
+      await register(formData.name, formData.email, formData.password, formData.role);
+      // On success, navigate to OTP verification with email in state
+      navigate('/verify-otp', { state: { email: formData.email, type: 'register' } });
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {

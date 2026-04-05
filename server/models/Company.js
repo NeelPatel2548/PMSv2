@@ -5,7 +5,7 @@ const companySchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
-    unique: true
+    unique: true         // ← creates unique index on user automatically
   },
   name: {
     type: String,
@@ -40,9 +40,9 @@ const companySchema = new mongoose.Schema({
   hrPhone: {
     type: String
   },
-  logo: {
-    type: String,
-    default: null
+  logo: { // CHANGED — was a plain String; now an object to store Cloudinary publicId for deletion
+    url: { type: String, default: null },       // Cloudinary secure_url for display
+    publicId: { type: String, default: null }   // Cloudinary public_id for deletion on replace
   },
   isApproved: {
     type: Boolean,
@@ -54,8 +54,19 @@ const companySchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// ---------------------------------------------------------------------------
 // Indexes
+// ---------------------------------------------------------------------------
+
+// user: unique index is already created by the `unique: true` field option above.
+// DO NOT duplicate it here.
+
+// isApproved: admin approval queue — "show pending companies"
+// Query: Company.find({ isApproved: false })
 companySchema.index({ isApproved: 1 });
+
+// tier: used for filtering companies by recruitment tier in admin reports
+// Query: Company.find({ tier: 'tier1' })
 companySchema.index({ tier: 1 });
 
 module.exports = mongoose.model('Company', companySchema);

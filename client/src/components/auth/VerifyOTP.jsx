@@ -1,17 +1,28 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Mail, Lock, ArrowRight, GraduationCap } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, ArrowRight, CheckCircle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 
 const VerifyOTP = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const initialEmail = location.state?.email || '';
+  const { verifyOTP, loginVerify, user } = useAuth();
+
+  // Read email and type from navigation state
+  const email = location.state?.email || '';
+  const type = location.state?.type || 'register';
   const purpose = location.state?.purpose || 'verification';
 
-  const [step, setStep] = useState(purpose === 'reset' && !initialEmail ? 'email' : 'otp');
-  const [email, setEmail] = useState(initialEmail);
+  // Determine initial step
+  const getInitialStep = () => {
+    if (purpose === 'reset' && !email) return 'email';
+    return 'otp';
+  };
+
+  const [step, setStep] = useState(getInitialStep());
+  const [resetEmail, setResetEmail] = useState(email);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,12 +31,28 @@ const VerifyOTP = () => {
   const [countdown, setCountdown] = useState(0);
   const inputRefs = useRef([]);
 
+  // If no email and not a reset flow, redirect back to register
+  useEffect(() => {
+    if (!email && purpose !== 'reset') {
+      navigate('/register', { replace: true });
+    }
+  }, [email, purpose, navigate]);
+
+  // If user is already authenticated (e.g., after login OTP verify),
+  // redirect to their dashboard
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'student') navigate('/student/dashboard', { replace: true });
+      else if (user.role === 'company') navigate('/company/dashboard', { replace: true });
+      else if (user.role === 'admin') navigate('/admin/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
+
   const handleOtpChange = (index, value) => {
     if (!/^\d?$/.test(value)) return;
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
-    // Auto-advance
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
@@ -50,13 +77,14 @@ const VerifyOTP = () => {
   };
 
   const otpString = otp.join('');
+  const activeEmail = email || resetEmail;
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      await api.post('/auth/forgot-password', { email });
+      await api.post('/auth/forgot-password', { email: resetEmail });
       setStep('otp');
       setSuccessMsg('OTP sent to your email.');
     } catch (err) {
@@ -68,23 +96,32 @@ const VerifyOTP = () => {
 
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
+    if (loading) return; // prevent double-submit
     setLoading(true);
     setError('');
     setSuccessMsg('');
     try {
-      if (purpose === 'verification') {
-        const res = await api.post('/auth/verify-otp', { email, otp: otpString });
-        if (res.data.success) {
-          const user = res.data.data;
-          window.location.href = `/${user.role}/dashboard`;
-        }
-      } else if (purpose === 'reset') {
-        await api.post('/auth/verify-reset-otp', { email, otp: otpString });
+      if (purpose === 'reset') {
+        // Password reset OTP verification
+        await api.post('/auth/verify-reset-otp', { email: activeEmail, otp: otpString });
         setStep('newPassword');
         setSuccessMsg('OTP verified. Enter your new password.');
+      } else if (type === 'login') {
+        // Login OTP — AuthContext loginVerify sets cookie + calls checkAuth
+        await loginVerify(activeEmail, otpString);
+        // useEffect on `user` will redirect to dashboard
+      } else {
+        // Registration OTP — backend does NOT set cookie here,
+        // it just creates the account. User must login afterwards.
+        const res = await verifyOTP(activeEmail, otpString);
+        // Show success and redirect to login
+        setSuccessMsg(res.message || 'Account created successfully! Redirecting to login...');
+        setTimeout(() => {
+          navigate('/login', { replace: true });
+        }, 2000);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Verification failed');
+      setError(err.response?.data?.message || 'Verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -98,9 +135,9 @@ const VerifyOTP = () => {
     setLoading(true);
     setError('');
     try {
-      await api.post('/auth/reset-password', { email, newPassword });
+      await api.post('/auth/reset-password', { email: activeEmail, newPassword });
       setSuccessMsg('Password reset successfully!');
-      setTimeout(() => navigate('/login'), 2000);
+      setTimeout(() => navigate('/login', { replace: true }), 2000);
     } catch (err) {
       setError(err.response?.data?.message || 'Reset failed');
     } finally {
@@ -111,9 +148,14 @@ const VerifyOTP = () => {
   const handleResend = async () => {
     if (countdown > 0) return;
     try {
-      await api.post('/auth/resend-otp', { email, purpose: purpose === 'reset' ? 'reset' : 'verification' });
+      await api.post('/auth/resend-otp', {
+        email: activeEmail,
+        purpose: purpose === 'reset' ? 'reset' : type === 'login' ? 'login' : 'verification'
+      });
       setSuccessMsg('OTP resent.');
       setError('');
+      setOtp(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
       setCountdown(30);
       const timer = setInterval(() => {
         setCountdown(prev => {
@@ -135,7 +177,7 @@ const VerifyOTP = () => {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 border border-slate-100">
           <div className="text-center mb-8">
-            {/* Mail icon in indigo circle */}
+            {/* Icon */}
             <div className="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center mx-auto mb-4">
               {step === 'newPassword'
                 ? <Lock className="w-8 h-8 text-indigo-600" />
@@ -149,7 +191,7 @@ const VerifyOTP = () => {
             </h1>
             <p className="text-slate-500 mt-1.5 text-sm">
               {step === 'email' ? 'Enter your email to receive a reset OTP'
-                : step === 'otp' ? `Enter the 6-digit code sent to ${email}`
+                : step === 'otp' ? `Enter the 6-digit code sent to ${activeEmail}`
                 : 'Set your new password'}
             </p>
           </div>
@@ -160,7 +202,10 @@ const VerifyOTP = () => {
           )}
           {successMsg && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-              className="mb-5 p-3 rounded-xl bg-emerald-50 text-emerald-600 text-sm border border-emerald-100 font-medium">{successMsg}</motion.div>
+              className="mb-5 p-3 rounded-xl bg-emerald-50 text-emerald-600 text-sm border border-emerald-100 font-medium flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 flex-shrink-0" />
+              {successMsg}
+            </motion.div>
           )}
 
           {step === 'email' && (
@@ -169,7 +214,7 @@ const VerifyOTP = () => {
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Email</label>
                 <div className="relative">
                   <Mail className={iconClass} />
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+                  <input type="email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required
                     className={inputClass} placeholder="you@example.com" id="forgot-email" />
                 </div>
               </div>

@@ -35,7 +35,7 @@ router.post(
   otpLimiter,
   [
     body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
-    body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits')
+    body('otp').trim().isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits')
   ],
   verifyOTP
 );
@@ -57,7 +57,7 @@ router.post(
   otpLimiter,
   [
     body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
-    body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits')
+    body('otp').trim().isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits')
   ],
   loginVerify
 );
@@ -92,7 +92,7 @@ router.post(
   otpLimiter,
   [
     body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
-    body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits')
+    body('otp').trim().isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits')
   ],
   verifyResetOTP
 );

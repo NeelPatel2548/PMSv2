@@ -9,6 +9,7 @@ const {
   updateStudentAcademic,
   verifyStudentAcademic,
   getCompanies,
+  getCompany,
   approveCompany,
   updateCompany,
   getJobs,
@@ -34,6 +35,7 @@ router.put('/students/:id/verify-academic', verifyStudentAcademic);
 
 // Companies
 router.get('/companies', getCompanies);
+router.get('/companies/:id', getCompany);
 router.put('/companies/:id', [
   body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
   body('tier').optional().isIn(['tier1', 'tier2', 'mass_recruiter']).withMessage('Invalid tier'),

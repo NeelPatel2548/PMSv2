@@ -6,12 +6,12 @@ const studentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
-    unique: true
+    unique: true         // ← creates unique index on user automatically
   },
   enrollmentNo: {
     type: String,
     unique: true,
-    sparse: true,
+    sparse: true,        // allows multiple null values
     trim: true
   },
   branch: {
@@ -98,6 +98,10 @@ const studentSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  profilePicture: { // NEW — student headshot stored in Cloudinary pms-profile-pictures/
+    url: { type: String, default: null },       // Cloudinary secure_url for display
+    publicId: { type: String, default: null }   // Cloudinary public_id for deletion on replace
+  },
   placementStatus: {
     type: String,
     default: 'unplaced',
@@ -123,10 +127,30 @@ const studentSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// ---------------------------------------------------------------------------
 // Indexes
-studentSchema.index({ branch: 1 });
-studentSchema.index({ cgpa: 1 });
+// ---------------------------------------------------------------------------
+
+// user: unique index is already created by the `unique: true` field option above.
+// DO NOT duplicate it here.
+
+// Compound eligibility filter index — the most critical index in the system.
+// Used by job application eligibility checks:
+//   Student.find({ cgpa: { $gte: minCGPA }, branch: { $in: eligibleBranches }, activeBacklogs: 0 })
+// Field order matters: put the highest-cardinality / most-selective field first.
+// cgpa (continuous range) → branch (low cardinality enum) → activeBacklogs (usually 0)
+studentSchema.index({ cgpa: 1, branch: 1, activeBacklogs: 1 });
+
+// placementStatus: admin report generation — "show all unplaced students"
+// Query: Student.find({ placementStatus: 'unplaced' })
 studentSchema.index({ placementStatus: 1 });
+
+// academicVerified: admin verification queue — "show unverified students"
+// Query: Student.find({ academicVerified: false })
+studentSchema.index({ academicVerified: 1 });
+
+// passingYear: batch-level filters for admin reports & eligibility
+// Query: Student.find({ passingYear: 2025 })
 studentSchema.index({ passingYear: 1 });
 
 module.exports = mongoose.model('Student', studentSchema);

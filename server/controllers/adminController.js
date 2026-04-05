@@ -10,6 +10,7 @@ const Interview = require('../models/Interview');
 const Notification = require('../models/Notification');
 const PlacementReport = require('../models/PlacementReport');
 const { success, error } = require('../utils/apiResponse');
+const { deleteCloudinaryFile, deleteFromCloudinary } = require('../middleware/upload'); // NEW — Cloudinary cleanup
 
 // @desc    Get admin dashboard stats
 // @route   GET /api/admin/dashboard
@@ -247,6 +248,25 @@ exports.getCompanies = async (req, res) => {
   }
 };
 
+// @desc    Get single company profile (view only)
+// @route   GET /api/admin/companies/:id
+// @access  Private (admin)
+exports.getCompany = async (req, res) => {
+  try {
+    const company = await Company.findById(req.params.id)
+      .populate('user', 'name email isActive isVerified createdAt');
+
+    if (!company) {
+      return error(res, 'Company not found', 404);
+    }
+
+    return success(res, company, 'Company fetched');
+  } catch (err) {
+    console.error('Get company error:', err);
+    return error(res, 'Failed to fetch company', 500);
+  }
+};
+
 // @desc    Approve/reject a company
 // @route   PUT /api/admin/companies/:id/approve
 // @access  Private (admin)
@@ -292,8 +312,9 @@ exports.updateCompany = async (req, res) => {
     }
 
     // Whitelist — NEVER allow isApproved, isActive, user via this route
+    // NOTE: 'logo' is excluded — use POST /api/admin/companies/:id/logo or the company's own route
     const allowed = ['name', 'industry', 'location', 'website', 'description',
-                     'hrName', 'hrEmail', 'hrPhone', 'logo', 'tier'];
+                     'hrName', 'hrEmail', 'hrPhone', 'tier']; // CHANGED — removed 'logo'
     const updates = {};
     allowed.forEach(key => {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
@@ -385,13 +406,18 @@ exports.deleteUser = async (req, res) => {
     if (user.role === 'student') {
       const student = await Student.findOne({ user: user._id });
       if (student) {
-        // Bug Fix 5: Delete resume file from disk
-        if (student.resumeUrl) {
+        // Clean up Cloudinary assets before deleting the record
+        if (student.resumeUrl) { // Legacy disk resume (kept for safety)
           const filePath = path.join(__dirname, '..', '..', student.resumeUrl);
           if (fs.existsSync(filePath)) {
             try { fs.unlinkSync(filePath); } catch (e) { console.log('Could not delete resume file:', e); }
           }
+          // Also try Cloudinary URL-based deletion
+          await deleteCloudinaryFile(student.resumeUrl).catch(() => {});
         }
+        if (student.profilePicture?.publicId) { // NEW — delete profile picture from Cloudinary
+          await deleteFromCloudinary(student.profilePicture.publicId, 'image'); // NEW
+        } // NEW
         // Cascade delete
         await Application.deleteMany({ student: student._id });
         await Interview.deleteMany({ student: student._id });
@@ -400,6 +426,9 @@ exports.deleteUser = async (req, res) => {
     } else if (user.role === 'company') {
       const company = await Company.findOne({ user: user._id });
       if (company) {
+        if (company.logo?.publicId) { // NEW — delete company logo from Cloudinary
+          await deleteFromCloudinary(company.logo.publicId, 'image'); // NEW
+        } // NEW
         // Get all jobs by this company
         const jobIds = await Job.find({ company: company._id }).distinct('_id');
         // Cascade delete

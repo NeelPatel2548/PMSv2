@@ -6,7 +6,7 @@ const Application = require('../models/Application');
 const Interview = require('../models/Interview');
 const Notification = require('../models/Notification');
 const { success, error } = require('../utils/apiResponse');
-const { deleteCloudinaryFile } = require('../middleware/upload');
+const { deleteCloudinaryFile, deleteFromCloudinary } = require('../middleware/upload'); // NEW — added deleteFromCloudinary
 
 // @desc    Get student profile
 // @route   GET /api/student/profile
@@ -193,6 +193,40 @@ exports.uploadResume = async (req, res) => {
     return error(res, err.message || 'Failed to upload resume', 500);
   }
 };
+
+// @desc    Upload student profile picture // NEW
+// @route   POST /api/student/profile/picture // NEW
+// @access  Private (student) // NEW
+exports.uploadProfilePicture = async (req, res) => { // NEW
+  try { // NEW
+    if (!req.file) { // NEW
+      return error(res, 'No image file provided', 400); // NEW
+    } // NEW
+
+    const student = await Student.findOne({ user: req.user._id }); // NEW
+    if (!student) { // NEW
+      return error(res, 'Student profile not found', 404); // NEW
+    } // NEW
+
+    // Delete the OLD photo from Cloudinary to avoid storage bloat
+    // multer-storage-cloudinary puts the public_id in req.file.filename
+    if (student.profilePicture?.publicId) { // NEW
+      await deleteFromCloudinary(student.profilePicture.publicId, 'image'); // NEW
+    } // NEW
+
+    // Cloudinary returns: secure_url → req.file.path, public_id → req.file.filename
+    student.profilePicture = { // NEW
+      url: req.file.path,      // secure_url // NEW
+      publicId: req.file.filename // public_id // NEW
+    }; // NEW
+    await student.save(); // NEW
+
+    return success(res, { profilePicture: student.profilePicture }, 'Profile picture uploaded successfully'); // NEW
+  } catch (err) { // NEW
+    console.error('Upload profile picture error:', err); // NEW
+    return error(res, err.message || 'Failed to upload profile picture', 500); // NEW
+  } // NEW
+}; // NEW
 
 // @desc    Get eligible jobs for student
 // @route   GET /api/student/jobs

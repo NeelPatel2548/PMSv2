@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const path = require('path');
+const mongoose = require('mongoose');
 
 // Load env vars FIRST — before anything else reads process.env
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
@@ -18,6 +19,23 @@ const connectDB = require('./config/db');
 
 // Connect to database
 connectDB();
+
+// ---------------------------------------------------------------------------
+// MongoDB connection lifecycle events
+// These fire after the initial connection is established and are critical
+// for diagnosing intermittent Atlas connectivity issues on cloud platforms.
+// ---------------------------------------------------------------------------
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️  MongoDB disconnected — attempting to reconnect...');
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('✅ MongoDB reconnected successfully');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB connection error:', err.message);
+});
 
 const app = express();
 

@@ -166,9 +166,20 @@ const ApplicantList = () => {
               {/* Student Info */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center shrink-0 text-sm">
-                    {app.student?.user?.name?.charAt(0)?.toUpperCase() || '?'}
-                  </div>
+                  {/* Student avatar — profile picture or initials fallback */} {/* NEW */}
+                  <div className="relative w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center shrink-0 text-sm overflow-hidden"> {/* NEW */}
+                    {app.student?.profilePicture?.url ? ( // NEW
+                      <img // NEW
+                        src={app.student.profilePicture.url} // NEW
+                        alt="" // NEW
+                        className="w-full h-full object-cover" // NEW
+                        onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex'; }} // NEW
+                      /> // NEW
+                    ) : null} // NEW
+                    <span className="absolute inset-0 flex items-center justify-center" style={{ display: app.student?.profilePicture?.url ? 'none' : 'flex' }}> {/* NEW */}
+                      {app.student?.user?.name?.charAt(0)?.toUpperCase() || '?'} // NEW
+                    </span> // NEW
+                  </div> {/* NEW */}
                   <div>
                     <h3 className="font-semibold text-slate-800">{app.student?.user?.name || 'Student'}</h3>
                     <p className="text-sm text-slate-500">{app.student?.user?.email}</p>
@@ -182,6 +193,7 @@ const ApplicantList = () => {
                 </div>
                 <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${statusColors[app.status]}`}>{app.status}</span>
               </div>
+
 
               {/* Skills */}
               {app.student?.skills?.length > 0 && (

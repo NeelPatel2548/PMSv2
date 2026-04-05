@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: [true, 'Email is required'],
-    unique: true,
+    unique: true,          // ← creates unique index on email automatically
     lowercase: true,
     trim: true,
     match: [/^\S+@\S+\.\S+$/, 'Invalid email format']
@@ -60,16 +60,34 @@ const userSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Index on role
-userSchema.index({ role: 1 });
+// ---------------------------------------------------------------------------
+// Indexes
+// ---------------------------------------------------------------------------
 
-// Hash password before saving
+// email: unique index is already created by the `unique: true` field option above.
+// DO NOT add a duplicate userSchema.index({ email: 1 }) here — it would create
+// two indexes on the same field and trigger a Mongoose warning.
+
+// Compound index: admin dashboard filters active users by role
+// Query: User.find({ role: 'student', isActive: true })
+// Supports: role-only queries too (leftmost prefix rule)
+userSchema.index({ role: 1, isActive: 1 });
+
+// ---------------------------------------------------------------------------
+// Hooks
+// ---------------------------------------------------------------------------
+
+// Hash password before saving — skip if already hashed (skipHash flag set by verifyOTP)
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || this.$locals.skipHash) return next();
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
+
+// ---------------------------------------------------------------------------
+// Instance methods
+// ---------------------------------------------------------------------------
 
 // Compare password method
 userSchema.methods.comparePassword = async function (candidatePassword) {

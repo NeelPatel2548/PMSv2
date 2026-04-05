@@ -31,6 +31,7 @@ import RoundManager from './components/company/RoundManager';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ManageStudents from './components/admin/ManageStudents';
 import ManageCompanies from './components/admin/ManageCompanies';
+import AdminCompanyView from './components/admin/AdminCompanyView';
 import ManageJobs from './components/admin/ManageJobs';
 import PlacementReports from './components/admin/PlacementReports';
 
@@ -112,6 +113,9 @@ function App() {
             } />
             <Route path="/admin/companies" element={
               <ProtectedRoute allowedRoles={['admin']}><ManageCompanies /></ProtectedRoute>
+            } />
+            <Route path="/admin/companies/:companyId" element={
+              <ProtectedRoute allowedRoles={['admin']}><AdminCompanyView /></ProtectedRoute>
             } />
             <Route path="/admin/jobs" element={
               <ProtectedRoute allowedRoles={['admin']}><ManageJobs /></ProtectedRoute>

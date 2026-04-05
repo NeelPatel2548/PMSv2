@@ -84,11 +84,17 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className={`w-12 h-12 rounded-xl ${avatarBg} flex items-center justify-center text-lg font-bold text-white overflow-hidden shadow-sm`}>
-            {job.company?.logo ? (
-              <img src={job.company.logo} alt="" className="w-full h-full object-cover" />
-            ) : (
-              firstLetter
-            )}
+            {job.company?.logo?.url ? ( // NEW — was job.company?.logo (string), now .logo.url (object)
+              <img
+                src={job.company.logo.url} // NEW
+                alt=""
+                className="w-full h-full object-contain bg-white p-0.5" // NEW — object-contain for logos
+                onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex'; }} // NEW
+              />
+            ) : null}
+            <span className="flex items-center justify-center w-full h-full" style={{ display: job.company?.logo?.url ? 'none' : 'flex' }}> // NEW
+              {firstLetter} // NEW
+            </span> // NEW
           </div>
           <div>
             <h3 className="font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors">{job.title}</h3>

@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const { companyLogoUpload } = require('../middleware/upload'); // NEW
 const {
   getProfile,
   updateProfile,
+  uploadCompanyLogo, // NEW
   postJob,
   getJobs,
   getJob,
@@ -30,6 +32,9 @@ router.put('/profile', [
   body('website').optional().matches(/^https?:\/\/.+/).withMessage('Must be a valid URL'),
   body('hrEmail').optional().isEmail().withMessage('Invalid HR email'),
 ], updateProfile);
+
+// Logo upload // NEW
+router.post('/profile/logo', companyLogoUpload.single('logo'), uploadCompanyLogo); // NEW
 
 // Jobs
 router.get('/jobs', getJobs);
