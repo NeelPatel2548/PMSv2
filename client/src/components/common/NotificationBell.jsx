@@ -1,251 +1,232 @@
-import { useState, useEffect, useRef } from 'react';
-import { Bell, Briefcase, FileText, Calendar, Trophy, Megaphone, Shield, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Bell, X, Check, Trash2, CheckCheck, Building2, GraduationCap, Settings, AlertCircle } from 'lucide-react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { getSocket, connectSocket, disconnectSocket } from '../../services/socket';
 
-const typeConfig = {
-  job_posted: { icon: Briefcase, color: 'bg-blue-100 text-blue-600', label: 'Job' },
-  application: { icon: FileText, color: 'bg-purple-100 text-purple-600', label: 'Application' },
-  application_update: { icon: FileText, color: 'bg-purple-100 text-purple-600', label: 'Application' },
-  interview_scheduled: { icon: Calendar, color: 'bg-orange-100 text-orange-600', label: 'Interview' },
-  interview_reminder: { icon: Calendar, color: 'bg-amber-100 text-amber-600', label: 'Reminder' },
-  offer_received: { icon: Trophy, color: 'bg-green-100 text-green-600', label: 'Offer' },
-  announcement: { icon: Megaphone, color: 'bg-slate-100 text-slate-600', label: 'Announcement' },
-  security: { icon: Shield, color: 'bg-red-100 text-red-600', label: 'Security' },
+/* ─── Toast Component ─── */
+const Toast = ({ toast, onDismiss }) => {
+  const typeBar = {
+    company: 'bg-bauhaus-blue',
+    student: 'bg-bauhaus-yellow',
+    admin: 'bg-bauhaus-red',
+    system: 'bg-bauhaus-black',
+  };
+  const typeIcon = {
+    company: <Building2 className="w-4 h-4 text-bauhaus-blue" />,
+    student: <GraduationCap className="w-4 h-4 text-bauhaus-yellow" />,
+    admin: <AlertCircle className="w-4 h-4 text-bauhaus-red" />,
+    system: <Settings className="w-4 h-4 text-bauhaus-black" />,
+  };
+
+  return (
+    <div className="flex items-stretch bg-white border-4 border-bauhaus-black shadow-hard-md animate-slide-in mb-2 group overflow-hidden">
+      {/* Left color bar */}
+      <div className={`w-2 flex-shrink-0 ${typeBar[toast.type] || typeBar.system}`} />
+      <div className="flex-1 p-3 flex items-start gap-2">
+        <div className="mt-0.5">{typeIcon[toast.type] || typeIcon.system}</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-bauhaus-black uppercase tracking-wide line-clamp-2">{toast.message}</p>
+          <p className="text-[10px] text-bauhaus-black/50 mt-0.5 uppercase tracking-wider font-bold">just now</p>
+        </div>
+        <button onClick={onDismiss} className="p-1 text-bauhaus-black/30 hover:text-bauhaus-red transition-colors flex-shrink-0">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
 };
 
+/* ─── Main Component ─── */
 const NotificationBell = () => {
-  const { unreadCount, decrementUnread, resetUnread, getSocket } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState(null);
-  const modalRef = useRef(null);
-  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [toasts, setToasts] = useState([]);
+  const dropdownRef = useRef(null);
+  const toastTimers = useRef({});
 
-  // Listen for real-time notifications — show toast
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
-
-    const handleNotification = (notif) => {
-      // Show a brief toast
-      setToast({ title: notif.title, message: notif.message });
-      setTimeout(() => setToast(null), 4000);
-
-      // If panel is open, prepend to list
-      if (isOpen) {
-        setNotifications(prev => [notif, ...prev]);
+  /* Fetch notifications */
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await api.get('/notifications');
+      if (res.data.success) {
+        const payload = res.data.data;
+        setNotifications(Array.isArray(payload) ? payload : payload?.notifications || []);
       }
-    };
-
-    socket.on('notification', handleNotification);
-    return () => socket.off('notification', handleNotification);
-  }, [getSocket, isOpen]);
-
-  // Close on outside click
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (modalRef.current && !modalRef.current.contains(e.target)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
-
-  // Close on Escape
-  useEffect(() => {
-    const handleEsc = (e) => { if (e.key === 'Escape') setIsOpen(false); };
-    document.addEventListener('keydown', handleEsc);
-    return () => document.removeEventListener('keydown', handleEsc);
+    } catch { /* silent */ }
   }, []);
 
-  const fetchNotifications = async () => {
-    setLoading(true);
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, fetchNotifications]);
+
+  /* Socket.IO real-time */
+  useEffect(() => {
+    if (!isAuthenticated || !user?._id) return;
+    let socket;
     try {
-      const res = await api.get('/notifications?limit=20');
-      if (res.data.success) setNotifications(res.data.data.notifications);
-    } catch { /* ignore */ } finally { setLoading(false); }
+      connectSocket();
+      socket = getSocket();
+    } catch (err) {
+      console.warn('[NotificationBell] Socket connection failed:', err.message);
+      return;
+    }
+    if (!socket) return;
+
+    const handler = (notification) => {
+      setNotifications(prev => [notification, ...prev]);
+      const toastId = Date.now() + Math.random();
+      setToasts(prev => [...prev, { id: toastId, message: notification.message, type: notification.type }]);
+      toastTimers.current[toastId] = setTimeout(() => {
+        setToasts(prev => prev.filter(t => t.id !== toastId));
+        delete toastTimers.current[toastId];
+      }, 4000);
+    };
+
+    socket.on('notification', handler);
+    return () => {
+      socket.off('notification', handler);
+      Object.values(toastTimers.current).forEach(clearTimeout);
+      toastTimers.current = {};
+    };
+  }, [isAuthenticated, user]);
+
+  /* Click outside to close */
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setOpen(false);
+    };
+    if (open) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  const dismissToast = (id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+    if (toastTimers.current[id]) {
+      clearTimeout(toastTimers.current[id]);
+      delete toastTimers.current[id];
+    }
   };
 
-  const toggleModal = () => {
-    if (!isOpen) fetchNotifications();
-    setIsOpen(!isOpen);
-  };
-
-  const markAsRead = async (id) => {
+  const markRead = async (id) => {
     try {
       await api.put(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
-      decrementUnread();
-    } catch { /* ignore */ }
+    } catch { /* silent */ }
   };
 
   const markAllRead = async () => {
     try {
       await api.put('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      resetUnread();
-    } catch { /* ignore */ }
+    } catch { /* silent */ }
   };
 
-  const handleClick = (notification) => {
-    if (!notification.isRead) markAsRead(notification._id);
-    if (notification.link) navigate(notification.link);
-    setIsOpen(false);
+  const deleteNotification = async (id) => {
+    try {
+      await api.delete(`/notifications/${id}`);
+      setNotifications(prev => prev.filter(n => n._id !== id));
+    } catch { /* silent */ }
   };
 
-  const getTimeAgo = (date) => {
-    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-    if (seconds < 60) return 'Just now';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+  if (!isAuthenticated) return null;
+
+  const typeIcon = {
+    company: <Building2 className="w-4 h-4 text-bauhaus-blue" />,
+    student: <GraduationCap className="w-4 h-4 text-bauhaus-yellow" />,
+    admin: <AlertCircle className="w-4 h-4 text-bauhaus-red" />,
+    system: <Settings className="w-4 h-4 text-bauhaus-black" />,
   };
 
   return (
     <>
-      {/* Bell Button */}
-      <button
-        onClick={toggleModal}
-        className="relative p-2 rounded-xl hover:bg-slate-100 transition-colors"
-        id="notification-bell"
-      >
-        <Bell className="w-5 h-5 text-slate-600" />
-        {unreadCount > 0 && (
-          <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold"
-          >
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </motion.span>
-        )}
-      </button>
+      {/* Toast container */}
+      <div className="fixed top-20 right-4 z-[100] w-80 space-y-2">
+        <style>{`
+          @keyframes slide-in { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+          .animate-slide-in { animation: slide-in 0.3s ease-out; }
+        `}</style>
+        {toasts.map(t => (
+          <Toast key={t.id} toast={t} onDismiss={() => dismissToast(t.id)} />
+        ))}
+      </div>
 
-      {/* Toast Notification - slides in from top-right */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, x: 20 }}
-            animate={{ opacity: 1, y: 0, x: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed top-4 right-4 z-[60] bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 max-w-xs"
-          >
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0">
-                <Bell className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-800 truncate">{toast.title}</p>
-                <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{toast.message}</p>
-              </div>
-              <button onClick={() => setToast(null)} className="p-0.5 hover:bg-slate-100 rounded-lg">
-                <X className="w-3.5 h-3.5 text-slate-400" />
-              </button>
+      {/* Bell + Dropdown */}
+      <div className="relative" ref={dropdownRef}>
+        <button
+          id="notification-bell"
+          onClick={() => setOpen(!open)}
+          className="relative p-2 hover:bg-bauhaus-muted transition-colors border-2 border-transparent hover:border-bauhaus-black"
+        >
+          <Bell className="w-5 h-5 text-bauhaus-black" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-bauhaus-red text-white text-[10px] font-black flex items-center justify-center border-2 border-bauhaus-black">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </button>
+
+        {open && (
+          <div className="absolute right-0 top-[calc(100%+8px)] w-80 max-h-[26rem] bg-white border-4 border-bauhaus-black shadow-hard-lg overflow-hidden z-50 flex flex-col">
+            {/* Header */}
+            <div className="px-4 py-3 border-b-4 border-bauhaus-black flex items-center justify-between bg-bauhaus-yellow">
+              <h3 className="text-sm font-black uppercase tracking-wider text-bauhaus-black">Notifications</h3>
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllRead}
+                  className="text-xs font-bold uppercase tracking-wider text-bauhaus-black/60 hover:text-bauhaus-black transition-colors flex items-center gap-1"
+                >
+                  <CheckCheck className="w-3.5 h-3.5" /> Mark all
+                </button>
+              )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* Modal Overlay + Panel */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-slate-900/30 z-40"
-              onClick={() => setIsOpen(false)}
-            />
-
-            {/* Panel */}
-            <motion.div
-              ref={modalRef}
-              initial={{ opacity: 0, y: -10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="fixed top-16 right-4 w-[380px] max-h-[80vh] bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 flex flex-col overflow-hidden"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-slate-100 flex-shrink-0">
-                <h3 className="font-bold text-slate-800 text-lg">Notifications</h3>
-                <div className="flex items-center gap-2">
-                  {unreadCount > 0 && (
-                    <button onClick={markAllRead} className="text-xs text-primary-600 hover:text-primary-700 font-medium">
-                      Mark all as read
-                    </button>
-                  )}
-                  <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 transition">
-                    <X className="w-4 h-4 text-slate-400" />
-                  </button>
+            {/* List */}
+            <div className="flex-1 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="py-8 text-center">
+                  <Bell className="w-8 h-8 mx-auto mb-2 text-bauhaus-muted" />
+                  <p className="text-sm text-bauhaus-black/40 font-bold uppercase tracking-wider">No notifications</p>
                 </div>
-              </div>
-
-              {/* Content */}
-              <div className="overflow-y-auto flex-1">
-                {loading ? (
-                  <div className="space-y-3 p-4">
-                    {[1,2,3].map(i => (
-                      <div key={i} className="animate-pulse flex gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-slate-100 flex-shrink-0" />
-                        <div className="flex-1 space-y-2">
-                          <div className="h-3 bg-slate-100 rounded w-3/4" />
-                          <div className="h-2 bg-slate-100 rounded w-full" />
-                          <div className="h-2 bg-slate-50 rounded w-1/4" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : notifications.length === 0 ? (
-                  <div className="p-10 text-center text-slate-400">
-                    <Bell className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                    <p className="font-medium">No notifications yet</p>
-                    <p className="text-xs mt-1">We'll notify you when something happens</p>
-                  </div>
-                ) : (
-                  notifications.map((n) => {
-                    const config = typeConfig[n.type] || typeConfig.announcement;
-                    const Icon = config.icon;
-                    return (
-                      <button
-                        key={n._id}
-                        onClick={() => handleClick(n)}
-                        className={`w-full text-left p-4 hover:bg-slate-50 transition-colors border-b border-slate-50 flex items-start gap-3 ${
-                          !n.isRead ? 'bg-primary-50/40 border-l-[3px] border-l-primary-500' : 'border-l-[3px] border-l-transparent'
-                        }`}
-                      >
-                        <div className={`w-9 h-9 rounded-xl ${config.color} flex items-center justify-center flex-shrink-0`}>
-                          <Icon className="w-4 h-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm leading-snug ${!n.isRead ? 'font-semibold text-slate-800' : 'text-slate-600'}`}>
-                            {n.title}
-                          </p>
-                          <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{n.message}</p>
-                          <p className="text-[10px] text-slate-300 mt-1.5">{getTimeAgo(n.createdAt)}</p>
-                        </div>
-                        {!n.isRead && (
-                          <span className="w-2 h-2 rounded-full bg-primary-500 mt-2 flex-shrink-0" />
-                        )}
+              ) : (
+                notifications.slice(0, 20).map(n => (
+                  <div
+                    key={n._id}
+                    className={`px-4 py-3 border-b-2 border-bauhaus-muted flex items-start gap-2.5 group transition-colors ${
+                      n.isRead ? 'bg-white' : 'bg-bauhaus-yellow/10'
+                    }`}
+                  >
+                    <div className="mt-0.5">{typeIcon[n.type] || typeIcon.system}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm ${n.isRead ? 'text-bauhaus-black/60' : 'text-bauhaus-black font-bold'}`}>
+                        {n.message}
+                      </p>
+                      <p className="text-[10px] text-bauhaus-black/30 mt-0.5 uppercase font-bold tracking-wider">
+                        {new Date(n.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                      {!n.isRead && (
+                        <button onClick={() => markRead(n._id)} className="p-1 hover:bg-bauhaus-muted transition-colors" title="Mark read">
+                          <Check className="w-3.5 h-3.5 text-bauhaus-blue" />
+                        </button>
+                      )}
+                      <button onClick={() => deleteNotification(n._id)} className="p-1 hover:bg-bauhaus-muted transition-colors" title="Delete">
+                        <Trash2 className="w-3.5 h-3.5 text-bauhaus-red" />
                       </button>
-                    );
-                  })
-                )}
-              </div>
-            </motion.div>
-          </>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
     </>
   );
 };

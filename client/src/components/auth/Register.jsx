@@ -1,51 +1,44 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { UserPlus, Mail, Lock, Eye, EyeOff, User, ArrowRight, GraduationCap, Building2, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { Eye, EyeOff, GraduationCap, Building2 } from 'lucide-react';
 
 const Register = () => {
+  const { register, checkAuth } = useAuth();
   const navigate = useNavigate();
-  const { register } = useAuth();
-  const [formData, setFormData] = useState({
-    name: '', email: '', password: '', confirmPassword: '', role: 'student'
-  });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: '' });
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [fieldErrors, setFieldErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    setError('');
-    if (fieldErrors[e.target.name]) setFieldErrors(prev => ({ ...prev, [e.target.name]: '' }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (error) setError('');
   };
 
-  const validateField = (name, value) => {
-    let err = '';
-    if (name === 'name' && value.length < 2) err = 'Name must be at least 2 characters';
-    if (name === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) err = 'Please enter a valid email address';
-    if (name === 'password' && value && value.length < 6) err = 'Password must be at least 6 characters';
-    if (name === 'confirmPassword' && value !== formData.password) err = 'Passwords do not match';
-    setFieldErrors(prev => ({ ...prev, [name]: err }));
+  const selectRole = (role) => {
+    setFormData({ ...formData, role });
+    if (error) setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const errs = {};
-    if (formData.name.length < 2) errs.name = 'Name must be at least 2 characters';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errs.email = 'Please enter a valid email address';
-    if (formData.password.length < 6) errs.password = 'Password must be at least 6 characters';
-    if (formData.password !== formData.confirmPassword) errs.confirmPassword = 'Passwords do not match';
-    setFieldErrors(errs);
-    if (Object.keys(errs).length > 0) return;
-
+    if (!formData.role) { setError('Please select a role'); return; }
     setLoading(true);
     setError('');
     try {
-      await register(formData.name, formData.email, formData.password, formData.role);
-      // On success, navigate to OTP verification with email in state
-      navigate('/verify-otp', { state: { email: formData.email, type: 'register' } });
+      const res = await register(formData.name, formData.email, formData.password, formData.role);
+      // In bypass mode, backend creates user directly and sets JWT cookie
+      if (res?.data?.role) {
+        await checkAuth();
+        const role = res.data.role;
+        if (role === 'student') navigate('/student/dashboard');
+        else if (role === 'company') navigate('/company/dashboard');
+        else navigate('/');
+      } else {
+        // Normal mode: navigate to OTP verification
+        navigate('/verify-otp', { state: { email: formData.email } });
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {
@@ -53,145 +46,140 @@ const Register = () => {
     }
   };
 
-  const inputBase = "w-full pl-11 pr-4 py-3 rounded-xl border focus:ring-2 outline-none transition-all text-sm";
-  const inputOk = `${inputBase} border-slate-200 focus:ring-indigo-500/20 focus:border-indigo-500`;
-  const inputBad = `${inputBase} border-red-300 focus:ring-red-500/20 focus:border-red-400`;
-  const errText = "text-xs text-red-500 mt-1 font-medium";
-  const iconClass = "absolute left-3.5 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-slate-400";
-
-  const roles = [
-    { value: 'student', icon: GraduationCap, label: 'Student', desc: 'Apply for jobs' },
-    { value: 'company', icon: Building2, label: 'Company', desc: 'Recruit talent' },
-  ];
-
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex">
-      {/* Left branding panel */}
-      <div className="hidden lg:flex lg:w-[480px] bg-slate-900 relative overflow-hidden flex-col justify-center px-14">
-        <div className="absolute w-96 h-96 rounded-full blur-3xl opacity-25 bg-indigo-600 -top-32 -right-32" />
-        <div className="absolute w-80 h-80 rounded-full blur-3xl opacity-20 bg-purple-600 -bottom-20 -left-20" />
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-              <GraduationCap className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-white">PMS</span>
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row">
+      {/* Left panel — geometric */}
+      <div className="hidden lg:flex flex-1 bg-bauhaus-red items-center justify-center relative overflow-hidden">
+        <div className="absolute top-10 right-10 w-32 h-32 bg-bauhaus-blue/30 border-4 border-white/20" />
+        <div className="absolute bottom-20 left-10 w-28 h-28 rounded-full bg-bauhaus-yellow/30 border-4 border-white/20" />
+        <div className="absolute bottom-10 right-20 w-20 h-20 border-4 border-white/20" />
+        <div className="relative z-10 text-center px-8">
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <div className="w-5 h-5 rounded-full bg-white/50" />
+            <div className="w-5 h-5 bg-bauhaus-yellow border-2 border-white/30" />
+            <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[17px] border-b-bauhaus-blue/50" />
           </div>
-          <h2 className="text-3xl font-extrabold text-white leading-tight mb-4">
-            Start your
-            <span className="block bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">placement journey</span>
-          </h2>
-          <p className="text-slate-400 leading-relaxed">Create your account to discover opportunities, track applications, and connect with top companies.</p>
+          <h2 className="text-5xl font-black text-white uppercase leading-tight mb-4">Join<br />The<br />Platform</h2>
+          <p className="text-white/50 font-medium text-sm uppercase tracking-widest">Create your account to get started</p>
         </div>
       </div>
 
-      {/* Right form panel */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 bg-slate-50">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 border border-slate-100">
-            <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold text-slate-900">Create Account</h1>
-              <p className="text-slate-500 mt-1.5 text-sm">Join the Placement Management System</p>
+      {/* Right panel — form */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-bauhaus-white">
+        <div className="w-full max-w-md">
+          {/* Mobile header */}
+          <div className="lg:hidden mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-4 h-4 rounded-full bg-bauhaus-red" />
+              <div className="w-4 h-4 bg-bauhaus-blue" />
+              <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[14px] border-b-bauhaus-yellow" />
             </div>
-
-            {error && (
-              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                className="mb-5 p-3 rounded-xl bg-red-50 text-red-600 text-sm border border-red-100 font-medium">{error}</motion.div>
-            )}
-
-            {/* Role Selector */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              {roles.map(r => {
-                const isSelected = formData.role === r.value;
-                return (
-                  <button key={r.value} type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, role: r.value }))}
-                    className={`relative p-4 rounded-xl border-2 text-left transition-all duration-200 ${
-                      isSelected
-                        ? 'border-indigo-500 bg-indigo-50/50 shadow-sm shadow-indigo-100'
-                        : 'border-slate-200 hover:border-indigo-300 bg-white'
-                    }`}>
-                    {/* Checkmark */}
-                    {isSelected && (
-                      <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center">
-                        <Check className="w-3 h-3 text-white" />
-                      </div>
-                    )}
-                    <r.icon className={`w-6 h-6 mb-2 ${isSelected ? 'text-indigo-600' : 'text-slate-400'}`} />
-                    <p className={`text-sm font-semibold ${isSelected ? 'text-indigo-700' : 'text-slate-700'}`}>{r.label}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">{r.desc}</p>
-                  </button>
-                );
-              })}
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Full Name</label>
-                <div className="relative">
-                  <User className={iconClass} />
-                  <input type="text" name="name" value={formData.name} onChange={handleChange}
-                    onBlur={() => validateField('name', formData.name)}
-                    required className={fieldErrors.name ? inputBad : inputOk}
-                    placeholder="John Doe" id="register-name" />
-                </div>
-                {fieldErrors.name && <p className={errText}>{fieldErrors.name}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Email</label>
-                <div className="relative">
-                  <Mail className={iconClass} />
-                  <input type="email" name="email" value={formData.email} onChange={handleChange}
-                    onBlur={() => validateField('email', formData.email)}
-                    required className={fieldErrors.email ? inputBad : inputOk}
-                    placeholder="you@example.com" id="register-email" />
-                </div>
-                {fieldErrors.email && <p className={errText}>{fieldErrors.email}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Password</label>
-                <div className="relative">
-                  <Lock className={iconClass} />
-                  <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange}
-                    onBlur={() => validateField('password', formData.password)}
-                    required minLength={6}
-                    className={`${fieldErrors.password ? inputBad : inputOk} !pr-12`}
-                    placeholder="Min. 6 characters" id="register-password" />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
-                    {showPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
-                  </button>
-                </div>
-                {fieldErrors.password && <p className={errText}>{fieldErrors.password}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Confirm Password</label>
-                <div className="relative">
-                  <Lock className={iconClass} />
-                  <input type={showPassword ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword} onChange={handleChange}
-                    onBlur={() => validateField('confirmPassword', formData.confirmPassword)}
-                    required className={fieldErrors.confirmPassword ? inputBad : inputOk}
-                    placeholder="Re-enter password" id="register-confirm-password" />
-                </div>
-                {fieldErrors.confirmPassword && <p className={errText}>{fieldErrors.confirmPassword}</p>}
-              </div>
-
-              <button type="submit" disabled={loading} id="register-submit"
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5">
-                {loading ? 'Creating Account...' : 'Create Account'}
-                {!loading && <ArrowRight className="w-4 h-4" />}
-              </button>
-            </form>
-
-            <p className="mt-6 text-center text-sm text-slate-500">
-              Already have an account?{' '}
-              <Link to="/login" className="text-indigo-600 hover:text-indigo-700 font-semibold">Sign In</Link>
-            </p>
+            <h1 className="text-3xl font-black uppercase text-bauhaus-black">Create Account</h1>
           </div>
-        </motion.div>
+
+          <h1 className="hidden lg:block text-3xl font-black uppercase text-bauhaus-black mb-2">Register</h1>
+          <p className="text-bauhaus-black/50 font-medium text-sm uppercase tracking-widest mb-6">Choose your role and fill in your details</p>
+
+          {error && (
+            <div className="mb-6 p-4 bg-bauhaus-red text-white border-2 border-bauhaus-black font-bold text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Role Selection */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <button
+              type="button"
+              onClick={() => selectRole('student')}
+              className={`p-5 border-4 text-center transition-all ${
+                formData.role === 'student'
+                  ? 'bg-bauhaus-yellow border-bauhaus-black shadow-hard-md'
+                  : 'bg-white border-bauhaus-black hover:bg-bauhaus-muted'
+              }`}
+            >
+              <GraduationCap className={`w-8 h-8 mx-auto mb-2 ${formData.role === 'student' ? 'text-bauhaus-black' : 'text-bauhaus-black/40'}`} />
+              <p className="text-sm font-black uppercase tracking-wider text-bauhaus-black">Student</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => selectRole('company')}
+              className={`p-5 border-4 text-center transition-all ${
+                formData.role === 'company'
+                  ? 'bg-bauhaus-blue border-bauhaus-black shadow-hard-md text-white'
+                  : 'bg-white border-bauhaus-black hover:bg-bauhaus-muted'
+              }`}
+            >
+              <Building2 className={`w-8 h-8 mx-auto mb-2 ${formData.role === 'company' ? 'text-white' : 'text-bauhaus-black/40'}`} />
+              <p className={`text-sm font-black uppercase tracking-wider ${formData.role === 'company' ? 'text-white' : 'text-bauhaus-black'}`}>Company</p>
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-bauhaus-black/60 mb-2">
+                {formData.role === 'company' ? 'Company Name' : 'Full Name'}
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                className="bauhaus-input"
+                placeholder={formData.role === 'company' ? 'Company name' : 'Your full name'}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-bauhaus-black/60 mb-2">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                className="bauhaus-input"
+                placeholder="your@email.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-bauhaus-black/60 mb-2">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  minLength={6}
+                  className="bauhaus-input pr-12"
+                  placeholder="Min 6 characters"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-bauhaus-black/40 hover:text-bauhaus-black transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !formData.role}
+              className="w-full py-4 bg-bauhaus-red text-white font-black border-2 border-bauhaus-black shadow-hard-md hover:opacity-90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all uppercase tracking-wider text-sm disabled:opacity-50"
+            >
+              {loading ? 'Creating Account...' : 'Create Account'}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-bauhaus-black/50 font-medium">
+            Already have an account?{' '}
+            <Link to="/login" className="font-black text-bauhaus-blue hover:text-bauhaus-red transition-colors uppercase">Login</Link>
+          </p>
+        </div>
       </div>
     </div>
   );

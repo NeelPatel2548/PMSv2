@@ -55,11 +55,10 @@ exports.register = async (req, res) => {
 
     // BYPASS MODE: skip OTP, create User + role doc directly and return
     if (isBypassMode()) {
-      const hashedPassword = await bcrypt.hash(password, 12);
       const user = await User.create({
         name,
         email: normalizedEmail,
-        password: hashedPassword,
+        password,  // plain text — pre-save hook will hash it
         role,
         isVerified: true
       });

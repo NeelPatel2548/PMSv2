@@ -1,19 +1,13 @@
-import { motion } from 'framer-motion';
-
-const Loader = ({ text = 'Loading...' }) => {
+const Loader = () => {
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center gap-4"
-      >
-        <div className="relative w-16 h-16">
-          <div className="absolute inset-0 rounded-full border-4 border-primary-200"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary-600 animate-spin"></div>
-        </div>
-        <p className="text-slate-500 font-medium">{text}</p>
-      </motion.div>
+    <div className="flex flex-col items-center justify-center py-20 gap-6">
+      {/* Geometric shapes with staggered pulse */}
+      <div className="flex items-center gap-4">
+        <div className="w-8 h-8 rounded-full bg-bauhaus-red border-2 border-bauhaus-black bauhaus-loader-circle" />
+        <div className="w-8 h-8 bg-bauhaus-blue border-2 border-bauhaus-black bauhaus-loader-square" />
+        <div className="w-0 h-0 border-l-[16px] border-l-transparent border-r-[16px] border-r-transparent border-b-[28px] border-b-bauhaus-yellow bauhaus-loader-triangle" />
+      </div>
+      <p className="text-sm font-black uppercase tracking-[0.3em] text-bauhaus-black/50">Loading</p>
     </div>
   );
 };

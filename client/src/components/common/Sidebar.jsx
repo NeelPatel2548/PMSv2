@@ -1,6 +1,5 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import {
   LayoutDashboard, User, Briefcase, FileText, Calendar,
@@ -52,10 +51,10 @@ const Sidebar = () => {
     : user?.role === 'admin' ? adminLinks
     : [];
 
-  const rolePills = {
-    student: 'bg-indigo-500/20 text-indigo-300 shadow-indigo-500/10',
-    company: 'bg-emerald-500/20 text-emerald-300 shadow-emerald-500/10',
-    admin: 'bg-red-500/20 text-red-300 shadow-red-500/10',
+  const roleBadge = {
+    student: 'bg-bauhaus-yellow text-bauhaus-black',
+    company: 'bg-bauhaus-blue text-white',
+    admin: 'bg-bauhaus-red text-white',
   };
 
   const NavItems = ({ onItemClick }) => (
@@ -70,7 +69,7 @@ const Sidebar = () => {
               onClick={() => { document.getElementById('notification-bell')?.click(); onItemClick?.(); }}
               className="relative block w-full text-left"
             >
-              <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-slate-400 hover:bg-slate-800/80 hover:text-slate-200">
+              <div className="flex items-center gap-3 px-3 py-2.5 text-sm font-bold uppercase tracking-widest transition-colors duration-200 text-white/60 hover:bg-bauhaus-blue">
                 <link.icon className="w-[18px] h-[18px] flex-shrink-0" />
                 <span>{link.label}</span>
               </div>
@@ -85,18 +84,11 @@ const Sidebar = () => {
             onClick={onItemClick}
             className="relative block"
           >
-            <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+            <div className={`flex items-center gap-3 px-3 py-2.5 text-sm font-bold uppercase tracking-widest transition-colors duration-200 ${
               isActive
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
+                ? 'bg-bauhaus-red text-white border-l-4 border-bauhaus-yellow'
+                : 'text-white/60 hover:bg-bauhaus-blue hover:text-white'
             }`}>
-              {isActive && (
-                <motion.div
-                  layoutId="sidebar-indicator"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-indigo-400 rounded-r-full shadow-sm shadow-indigo-400/50"
-                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                />
-              )}
               <link.icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? 'text-white' : ''}`} />
               <span>{link.label}</span>
             </div>
@@ -108,30 +100,29 @@ const Sidebar = () => {
 
   /* ───── Desktop Sidebar ───── */
   const DesktopSidebar = (
-    <aside className="hidden lg:flex flex-col w-60 min-h-[calc(100vh-4rem)] bg-slate-900">
+    <aside className="hidden lg:flex flex-col w-60 min-h-[calc(100vh-4rem)] bg-bauhaus-black">
       {/* Logo + Role */}
-      <div className="p-5 pb-4">
+      <div className="p-5 pb-4 border-b-4 border-bauhaus-yellow">
         <div className="flex items-center gap-2.5 mb-4">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-            <GraduationCap className="w-5 h-5 text-white" />
+          {/* Geometric logo shapes */}
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-4 rounded-full bg-bauhaus-red border border-white/20" />
+            <div className="w-4 h-4 bg-bauhaus-blue border border-white/20" />
+            <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[14px] border-b-bauhaus-yellow" />
           </div>
-          <div>
-            <span className="text-base font-bold text-white tracking-tight">PMS</span>
-            <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide shadow-sm ${rolePills[user?.role] || 'bg-slate-700 text-slate-400'}`}>
-              {user?.role}
-            </span>
-          </div>
+          <span className="text-base font-black text-white uppercase tracking-tight">PMS</span>
+          <span className={`ml-1 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border-2 border-bauhaus-black ${roleBadge[user?.role] || 'bg-white/10 text-white/40'}`}>
+            {user?.role}
+          </span>
         </div>
         <div className="px-1">
-          <p className="text-sm font-semibold text-slate-200 truncate">{user?.name}</p>
-          <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+          <p className="text-sm font-bold text-white truncate uppercase">{user?.name}</p>
+          <p className="text-xs text-white/40 truncate">{user?.email}</p>
         </div>
       </div>
 
-      <div className="h-px bg-slate-800 mx-4" />
-
       {/* Nav Links */}
-      <nav className="flex-1 px-3 py-4 space-y-1 sidebar-scroll overflow-y-auto">
+      <nav className="flex-1 py-4 space-y-0.5 sidebar-scroll overflow-y-auto">
         <NavItems />
       </nav>
 
@@ -139,14 +130,14 @@ const Sidebar = () => {
       <div className="px-3 pb-2">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
+          className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-bold uppercase tracking-widest text-white/40 hover:bg-bauhaus-red hover:text-white transition-colors duration-200"
         >
           <LogOut className="w-[18px] h-[18px]" />
           <span>Logout</span>
         </button>
       </div>
-      <div className="p-4 border-t border-slate-800">
-        <p className="text-[11px] text-slate-600 text-center">PMS v2.0 · Placement System</p>
+      <div className="p-4 border-t-4 border-bauhaus-yellow">
+        <p className="text-[11px] text-white/30 text-center uppercase tracking-widest font-bold">PMS v2.0</p>
       </div>
     </aside>
   );
@@ -157,79 +148,70 @@ const Sidebar = () => {
       {/* Mobile toggle button */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed bottom-6 left-6 z-50 w-12 h-12 rounded-2xl bg-slate-900 text-white shadow-xl shadow-slate-900/50 flex items-center justify-center hover:bg-slate-800 transition-colors"
+        className="lg:hidden fixed bottom-6 left-6 z-50 w-12 h-12 bg-bauhaus-black text-white border-2 border-bauhaus-yellow shadow-hard-sm flex items-center justify-center hover:bg-bauhaus-red transition-colors"
         aria-label="Open sidebar"
       >
         <Menu className="w-5 h-5" />
       </button>
 
-      <AnimatePresence>
-        {mobileOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
-              onClick={() => setMobileOpen(false)}
-            />
-            {/* Drawer */}
-            <motion.aside
-              initial={{ x: -280 }}
-              animate={{ x: 0 }}
-              exit={{ x: -280 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="lg:hidden fixed inset-y-0 left-0 z-50 w-[272px] bg-slate-900 shadow-2xl flex flex-col"
-            >
-              {/* Header */}
-              <div className="p-5 pb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-                    <GraduationCap className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-base font-bold text-white tracking-tight">PMS</span>
+      {mobileOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="lg:hidden fixed inset-0 z-50 bg-bauhaus-black/80"
+            onClick={() => setMobileOpen(false)}
+          />
+          {/* Drawer */}
+          <aside
+            className="lg:hidden fixed inset-y-0 left-0 z-50 w-[272px] bg-bauhaus-black flex flex-col border-r-4 border-bauhaus-yellow"
+          >
+            {/* Header */}
+            <div className="p-5 pb-4 flex items-center justify-between border-b-4 border-bauhaus-yellow">
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-4 rounded-full bg-bauhaus-red border border-white/20" />
+                  <div className="w-4 h-4 bg-bauhaus-blue border border-white/20" />
+                  <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[14px] border-b-bauhaus-yellow" />
                 </div>
-                <button onClick={() => setMobileOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
+                <span className="text-base font-black text-white uppercase tracking-tight">PMS</span>
               </div>
+              <button onClick={() => setMobileOpen(false)} className="p-1.5 hover:bg-bauhaus-red text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-              {/* User info */}
-              <div className="px-5 pb-4">
-                <p className="text-sm font-semibold text-slate-200 truncate">{user?.name}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <p className="text-xs text-slate-500 truncate">{user?.email}</p>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${rolePills[user?.role] || 'bg-slate-700 text-slate-400'}`}>
-                    {user?.role}
-                  </span>
-                </div>
+            {/* User info */}
+            <div className="px-5 pb-4 pt-3">
+              <p className="text-sm font-bold text-white truncate uppercase">{user?.name}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-xs text-white/40 truncate">{user?.email}</p>
+                <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border-2 border-bauhaus-black ${roleBadge[user?.role] || 'bg-white/10 text-white/40'}`}>
+                  {user?.role}
+                </span>
               </div>
+            </div>
 
-              <div className="h-px bg-slate-800 mx-4" />
+            {/* Nav */}
+            <nav className="flex-1 py-4 space-y-0.5 overflow-y-auto sidebar-scroll">
+              <NavItems onItemClick={() => setMobileOpen(false)} />
+            </nav>
 
-              {/* Nav */}
-              <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto sidebar-scroll">
-                <NavItems onItemClick={() => setMobileOpen(false)} />
-              </nav>
-
-              {/* Logout */}
-              <div className="px-3 pb-2">
-                <button
-                  onClick={() => { handleLogout(); setMobileOpen(false); }}
-                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
-                >
-                  <LogOut className="w-[18px] h-[18px]" />
-                  <span>Logout</span>
-                </button>
-              </div>
-              <div className="p-4 border-t border-slate-800">
-                <p className="text-[11px] text-slate-600 text-center">PMS v2.0 · Placement System</p>
-              </div>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
+            {/* Logout */}
+            <div className="px-3 pb-2">
+              <button
+                onClick={() => { handleLogout(); setMobileOpen(false); }}
+                className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-bold uppercase tracking-widest text-white/40 hover:bg-bauhaus-red hover:text-white transition-colors duration-200"
+              >
+                <LogOut className="w-[18px] h-[18px]" />
+                <span>Logout</span>
+              </button>
+            </div>
+            <div className="p-4 border-t-4 border-bauhaus-yellow">
+              <p className="text-[11px] text-white/30 text-center uppercase tracking-widest font-bold">PMS v2.0</p>
+            </div>
+          </aside>
+        </>
+      )}
     </>
   );
 

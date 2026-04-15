@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Calendar, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
 import api from '../../services/api';
 
 const RoundManager = () => {
@@ -42,20 +41,18 @@ const RoundManager = () => {
     } finally { setLoading(false); }
   };
 
-  const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition text-sm";
-  const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
+  const inputClass = "bauhaus-input";
+  const labelClass = "block text-xs font-black uppercase tracking-widest text-bauhaus-black/60 mb-1.5";
 
   return (
     <div className="max-w-2xl mx-auto">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold text-slate-800 mb-1">Schedule Interview Round</h1>
-        <p className="text-slate-500 text-sm mb-6">For: {studentName}</p>
-      </motion.div>
+      <h1 className="text-2xl font-black text-bauhaus-black mb-1 uppercase tracking-wider">Schedule Interview Round</h1>
+      <p className="text-bauhaus-black/50 text-sm mb-6 font-medium">For: {studentName}</p>
 
-      {error && <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-600 text-sm border border-red-100">{error}</div>}
-      {success && <div className="mb-4 p-3 rounded-xl bg-green-50 text-green-600 text-sm border border-green-100">{success}</div>}
+      {error && <div className="mb-4 p-3 bg-bauhaus-red text-white text-sm border-2 border-bauhaus-black font-bold">{error}</div>}
+      {success && <div className="mb-4 p-3 bg-bauhaus-yellow text-bauhaus-black text-sm border-2 border-bauhaus-black font-bold">{success}</div>}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 border border-slate-100 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-md space-y-4">
         <input type="hidden" name="applicationId" value={formData.applicationId} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -72,7 +69,7 @@ const RoundManager = () => {
         </div>
 
         <button type="submit" disabled={loading}
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-violet-600 text-white font-semibold hover:from-purple-700 hover:to-violet-700 transition-all disabled:opacity-60 flex items-center justify-center gap-2">
+          className="w-full py-3 bg-bauhaus-blue text-white font-black hover:opacity-90 transition-all disabled:opacity-60 flex items-center justify-center gap-2 border-4 border-bauhaus-black shadow-hard-md active:translate-x-[2px] active:translate-y-[2px] active:shadow-none uppercase tracking-wider">
           <Send className="w-5 h-5" />{loading ? 'Scheduling...' : 'Schedule Interview'}
         </button>
       </form>

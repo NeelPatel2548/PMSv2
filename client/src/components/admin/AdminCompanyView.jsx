@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import {
   ArrowLeft, CheckCircle, XCircle, Building2, Globe, MapPin, Users,
   Mail, Phone, User, Briefcase, AlertCircle, Loader2
@@ -8,9 +7,9 @@ import {
 import api from '../../services/api';
 
 const tierLabels = {
-  tier1: { label: 'Tier 1', cls: 'bg-amber-100 text-amber-700 border-amber-200' },
-  tier2: { label: 'Tier 2', cls: 'bg-blue-100 text-blue-700 border-blue-200' },
-  mass_recruiter: { label: 'Mass Recruiter', cls: 'bg-green-100 text-green-700 border-green-200' }
+  tier1: { label: 'Tier 1', cls: 'bg-bauhaus-yellow text-bauhaus-black' },
+  tier2: { label: 'Tier 2', cls: 'bg-bauhaus-blue text-white' },
+  mass_recruiter: { label: 'Mass Recruiter', cls: 'bg-bauhaus-red text-white' }
 };
 
 const AdminCompanyView = () => {
@@ -41,7 +40,6 @@ const AdminCompanyView = () => {
         if (companyRes.data.success) setCompany(companyRes.data.data);
         if (jobsRes.data.success) {
           const jobData = jobsRes.data.data;
-          // Filter to only this company's jobs (backend may not support query param)
           const all = Array.isArray(jobData) ? jobData : (jobData.results || []);
           setJobs(all.filter(j => {
             const cid = j.company?._id || j.company;
@@ -76,8 +74,8 @@ const AdminCompanyView = () => {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
-          <p className="text-sm text-slate-500">Loading company profile...</p>
+          <div className="bauhaus-loader"><div></div><div></div><div></div></div>
+          <p className="text-sm text-bauhaus-black/50 font-bold uppercase">Loading company profile...</p>
         </div>
       </div>
     );
@@ -86,11 +84,11 @@ const AdminCompanyView = () => {
   if (error) {
     return (
       <div className="max-w-2xl mx-auto mt-10">
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-100 text-red-700">
+        <div className="flex items-center gap-3 p-4 bg-bauhaus-red text-white border-2 border-bauhaus-black font-bold">
           <AlertCircle className="w-5 h-5 shrink-0" />
           <p>{error}</p>
         </div>
-        <button onClick={() => navigate(-1)} className="mt-4 flex items-center gap-2 text-sm text-slate-600 hover:text-indigo-600 transition">
+        <button onClick={() => navigate(-1)} className="mt-4 flex items-center gap-2 text-sm text-bauhaus-black/60 hover:text-bauhaus-blue transition font-bold uppercase">
           <ArrowLeft className="w-4 h-4" /> Back to Companies
         </button>
       </div>
@@ -99,7 +97,7 @@ const AdminCompanyView = () => {
 
   if (!company) return null;
 
-  const tierInfo = tierLabels[company.tier] || { label: company.tier, cls: 'bg-slate-100 text-slate-600' };
+  const tierInfo = tierLabels[company.tier] || { label: company.tier, cls: 'bg-bauhaus-muted text-bauhaus-black/60' };
   const logoSrc = company.logo?.url || null;
   const initial = (company.name || 'C').charAt(0).toUpperCase();
 
@@ -108,62 +106,37 @@ const AdminCompanyView = () => {
 
       {/* Toast */}
       {toast && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed top-6 right-6 z-50 px-5 py-3 bg-slate-900 text-white text-sm rounded-xl shadow-xl"
-        >
+        <div className="fixed top-6 right-6 z-50 px-5 py-3 bg-bauhaus-black text-white text-sm font-black border-2 border-bauhaus-yellow shadow-hard-sm uppercase">
           {toast}
-        </motion.div>
+        </div>
       )}
 
       {/* Back button */}
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 transition"
-      >
+      <button onClick={() => navigate(-1)}
+        className="flex items-center gap-2 text-sm text-bauhaus-black/50 hover:text-bauhaus-blue transition font-bold uppercase tracking-wider">
         <ArrowLeft className="w-4 h-4" /> Back to Companies
       </button>
 
       {/* Header card */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6"
-      >
+      <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-md">
         <div className="flex flex-col sm:flex-row sm:items-start gap-5">
-
           {/* Logo */}
-          <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 ring-2 ring-slate-200">
+          <div className="w-20 h-20 bg-bauhaus-muted flex items-center justify-center overflow-hidden shrink-0 border-4 border-bauhaus-black">
             {logoSrc ? (
-              <img
-                src={logoSrc}
-                alt={company.name}
-                className="w-full h-full object-contain p-1"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
-                }}
-              />
+              <img src={logoSrc} alt={company.name} className="w-full h-full object-contain p-1"
+                onError={(e) => { e.target.style.display = 'none'; if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex'; }} />
             ) : null}
-            <span
-              className="text-3xl font-bold text-slate-500"
-              style={{ display: logoSrc ? 'none' : 'flex' }}
-            >
-              {initial}
-            </span>
+            <span className="text-3xl font-black text-bauhaus-black/50" style={{ display: logoSrc ? 'none' : 'flex' }}>{initial}</span>
           </div>
 
           {/* Company info */}
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h1 className="text-2xl font-bold text-slate-800">{company.name}</h1>
+                <h1 className="text-2xl font-black text-bauhaus-black uppercase tracking-wider">{company.name}</h1>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${tierInfo.cls}`}>
-                    {tierInfo.label}
-                  </span>
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${company.isApproved ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                  <span className={`px-2.5 py-0.5 text-xs font-black uppercase border-2 border-bauhaus-black ${tierInfo.cls}`}>{tierInfo.label}</span>
+                  <span className={`px-2.5 py-0.5 text-xs font-black uppercase border-2 border-bauhaus-black ${company.isApproved ? 'bg-bauhaus-blue text-white' : 'bg-bauhaus-yellow text-bauhaus-black'}`}>
                     {company.isApproved ? '✅ Approved' : '⏳ Pending Approval'}
                   </span>
                 </div>
@@ -172,46 +145,25 @@ const AdminCompanyView = () => {
               {/* Approve / Reject */}
               <div className="flex gap-2 shrink-0">
                 {!company.isApproved ? (
-                  <button
-                    onClick={() => handleApproval(true)}
-                    disabled={approving}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50 transition shadow-sm"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    {approving ? 'Approving...' : 'Approve'}
+                  <button onClick={() => handleApproval(true)} disabled={approving}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-bauhaus-blue text-white text-sm font-black border-2 border-bauhaus-black hover:opacity-90 disabled:opacity-50 transition uppercase">
+                    <CheckCircle className="w-4 h-4" />{approving ? 'Approving...' : 'Approve'}
                   </button>
                 ) : (
-                  <button
-                    onClick={() => handleApproval(false)}
-                    disabled={approving}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition shadow-sm"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    {approving ? 'Revoking...' : 'Revoke Approval'}
+                  <button onClick={() => handleApproval(false)} disabled={approving}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-bauhaus-red text-white text-sm font-black border-2 border-bauhaus-black hover:opacity-90 disabled:opacity-50 transition uppercase">
+                    <XCircle className="w-4 h-4" />{approving ? 'Revoking...' : 'Revoke Approval'}
                   </button>
                 )}
               </div>
             </div>
 
             {/* Quick info row */}
-            <div className="flex flex-wrap gap-x-5 gap-y-2 mt-4 text-sm text-slate-500">
-              {company.industry && (
-                <span className="flex items-center gap-1.5">
-                  <Building2 className="w-4 h-4 text-slate-400" /> {company.industry}
-                </span>
-              )}
-              {company.location && (
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-slate-400" /> {company.location}
-                </span>
-              )}
+            <div className="flex flex-wrap gap-x-5 gap-y-2 mt-4 text-sm text-bauhaus-black/50 font-bold">
+              {company.industry && <span className="flex items-center gap-1.5"><Building2 className="w-4 h-4 text-bauhaus-black/30" /> {company.industry}</span>}
+              {company.location && <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-bauhaus-black/30" /> {company.location}</span>}
               {company.website && (
-                <a
-                  href={company.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 text-indigo-600 hover:underline"
-                >
+                <a href={company.website} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-bauhaus-blue hover:underline">
                   <Globe className="w-4 h-4" /> {company.website}
                 </a>
               )}
@@ -221,126 +173,97 @@ const AdminCompanyView = () => {
 
         {/* Description */}
         {company.description && (
-          <div className="mt-5 pt-5 border-t border-slate-100">
-            <p className="text-sm text-slate-600 leading-relaxed">{company.description}</p>
+          <div className="mt-5 pt-5 border-t-2 border-bauhaus-black">
+            <p className="text-sm text-bauhaus-black/70 leading-relaxed font-medium">{company.description}</p>
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* HR Contact */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-        className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6"
-      >
-        <h2 className="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
-          <User className="w-4 h-4 text-indigo-500" /> HR Contact
+      <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
+        <h2 className="text-sm font-black text-bauhaus-black mb-4 flex items-center gap-2 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2">
+          <User className="w-4 h-4 text-bauhaus-red" /> HR Contact
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
-              <User className="w-4 h-4 text-indigo-600" />
+          {[
+            { icon: User, label: 'HR Name', value: company.hrName || '—', color: 'bg-bauhaus-blue' },
+            { icon: Mail, label: 'HR Email', value: company.hrEmail || '—', color: 'bg-bauhaus-red' },
+            { icon: Phone, label: 'HR Phone', value: company.hrPhone || '—', color: 'bg-bauhaus-yellow' },
+          ].map(item => (
+            <div key={item.label} className="flex items-center gap-2.5">
+              <div className={`w-8 h-8 ${item.color} flex items-center justify-center shrink-0 border-2 border-bauhaus-black ${item.color === 'bg-bauhaus-yellow' ? 'text-bauhaus-black' : 'text-white'}`}>
+                <item.icon className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs text-bauhaus-black/30 font-bold uppercase">{item.label}</p>
+                <p className="text-sm font-bold text-bauhaus-black break-all">{item.value}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-slate-400">HR Name</p>
-              <p className="text-sm font-medium text-slate-800">{company.hrName || '—'}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
-              <Mail className="w-4 h-4 text-indigo-600" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400">HR Email</p>
-              <p className="text-sm font-medium text-slate-800 break-all">{company.hrEmail || '—'}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
-              <Phone className="w-4 h-4 text-indigo-600" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400">HR Phone</p>
-              <p className="text-sm font-medium text-slate-800">{company.hrPhone || '—'}</p>
-            </div>
-          </div>
+          ))}
         </div>
-      </motion.div>
+      </div>
 
       {/* Account info */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.08 }}
-        className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6"
-      >
-        <h2 className="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
-          <Users className="w-4 h-4 text-indigo-500" /> Account Details
+      <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
+        <h2 className="text-sm font-black text-bauhaus-black mb-4 flex items-center gap-2 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2">
+          <Users className="w-4 h-4 text-bauhaus-blue" /> Account Details
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
           <div>
-            <p className="text-xs text-slate-400 mb-0.5">Registered Email</p>
-            <p className="font-medium text-slate-800 break-all">{company.user?.email || '—'}</p>
+            <p className="text-xs text-bauhaus-black/30 font-bold uppercase mb-0.5">Registered Email</p>
+            <p className="font-bold text-bauhaus-black break-all">{company.user?.email || '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-400 mb-0.5">Account Status</p>
-            <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${company.user?.isActive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+            <p className="text-xs text-bauhaus-black/30 font-bold uppercase mb-0.5">Account Status</p>
+            <span className={`inline-block px-2.5 py-0.5 text-xs font-black uppercase border-2 border-bauhaus-black ${company.user?.isActive ? 'bg-bauhaus-blue text-white' : 'bg-bauhaus-red text-white'}`}>
               {company.user?.isActive ? 'Active' : 'Suspended'}
             </span>
           </div>
           <div>
-            <p className="text-xs text-slate-400 mb-0.5">Joined</p>
-            <p className="font-medium text-slate-800">
-              {company.createdAt ? new Date(company.createdAt).toLocaleDateString() : '—'}
-            </p>
+            <p className="text-xs text-bauhaus-black/30 font-bold uppercase mb-0.5">Joined</p>
+            <p className="font-bold text-bauhaus-black">{company.createdAt ? new Date(company.createdAt).toLocaleDateString() : '—'}</p>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Jobs Posted */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.11 }}
-        className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6"
-      >
-        <h2 className="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
-          <Briefcase className="w-4 h-4 text-indigo-500" /> Drives Posted
-          <span className="ml-auto text-xs text-slate-400 font-normal">{jobs.length} total</span>
+      <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
+        <h2 className="text-sm font-black text-bauhaus-black mb-4 flex items-center gap-2 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2">
+          <Briefcase className="w-4 h-4 text-bauhaus-yellow" /> Drives Posted
+          <span className="ml-auto text-xs text-bauhaus-black/30 font-bold">{jobs.length} total</span>
         </h2>
 
         {jobs.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-8 text-slate-300">
+          <div className="flex flex-col items-center gap-2 py-8 text-bauhaus-black/30">
             <Briefcase className="w-10 h-10" />
-            <p className="text-sm text-slate-400">No drives posted yet</p>
+            <p className="text-sm text-bauhaus-black/40 font-bold uppercase">No drives posted yet</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead>
-                <tr className="border-b border-slate-100 text-xs text-slate-400 uppercase">
-                  <th className="pb-3 font-medium">Role</th>
-                  <th className="pb-3 font-medium">Type</th>
-                  <th className="pb-3 font-medium">Package</th>
-                  <th className="pb-3 font-medium">Status</th>
-                  <th className="pb-3 font-medium">Deadline</th>
+                <tr className="border-b-2 border-bauhaus-black text-xs text-bauhaus-black/40 uppercase">
+                  <th className="pb-3 font-black tracking-wider">Role</th>
+                  <th className="pb-3 font-black tracking-wider">Type</th>
+                  <th className="pb-3 font-black tracking-wider">Package</th>
+                  <th className="pb-3 font-black tracking-wider">Status</th>
+                  <th className="pb-3 font-black tracking-wider">Deadline</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody>
                 {jobs.map(job => (
-                  <tr key={job._id} className="hover:bg-slate-50 transition">
-                    <td className="py-3 font-medium text-slate-800 pr-4">{job.title}</td>
-                    <td className="py-3 text-slate-500 capitalize pr-4">{job.jobType || '—'}</td>
-                    <td className="py-3 text-slate-700 pr-4">
+                  <tr key={job._id} className="border-b border-bauhaus-muted hover:bg-bauhaus-muted/30 transition">
+                    <td className="py-3 font-bold text-bauhaus-black pr-4">{job.title}</td>
+                    <td className="py-3 text-bauhaus-black/50 capitalize pr-4 font-medium">{job.jobType || '—'}</td>
+                    <td className="py-3 text-bauhaus-black font-bold pr-4">
                       {job.package ? `₹${job.package} LPA` : job.stipend ? `₹${job.stipend}/mo` : '—'}
                     </td>
                     <td className="py-3 pr-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${job.status === 'open' ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                      <span className={`px-2.5 py-0.5 text-xs font-black uppercase border-2 border-bauhaus-black ${job.status === 'open' ? 'bg-bauhaus-blue text-white' : 'bg-bauhaus-muted text-bauhaus-black/50'}`}>
                         {job.status}
                       </span>
                     </td>
-                    <td className="py-3 text-slate-500">
+                    <td className="py-3 text-bauhaus-black/50 font-medium">
                       {job.deadline ? new Date(job.deadline).toLocaleDateString() : '—'}
                     </td>
                   </tr>
@@ -349,7 +272,7 @@ const AdminCompanyView = () => {
             </table>
           </div>
         )}
-      </motion.div>
+      </div>
 
     </div>
   );

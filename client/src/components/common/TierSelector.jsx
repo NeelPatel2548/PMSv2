@@ -11,28 +11,28 @@ const TIERS = [
     value: 'tier2',
     label: 'Tier 2',
     description: 'Standard companies — good packages and career growth opportunities.',
-    color: 'slate',
+    color: 'black',
   },
   {
     value: 'mass_recruiter',
     label: 'Mass Recruiter',
     description: 'Open recruitment — all eligible students can apply regardless of other placements.',
-    color: 'green',
+    color: 'yellow',
   },
 ];
 
 const colorMap = {
   blue: {
-    active: 'bg-blue-600 text-white border-blue-600 shadow-blue-200',
-    inactive: 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50',
+    active: 'bg-bauhaus-blue text-white border-bauhaus-black shadow-hard-sm',
+    inactive: 'bg-white text-bauhaus-blue border-bauhaus-black hover:bg-bauhaus-blue/10',
   },
-  slate: {
-    active: 'bg-slate-700 text-white border-slate-700 shadow-slate-200',
-    inactive: 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50',
+  black: {
+    active: 'bg-bauhaus-black text-white border-bauhaus-black shadow-hard-sm',
+    inactive: 'bg-white text-bauhaus-black border-bauhaus-black hover:bg-bauhaus-muted',
   },
-  green: {
-    active: 'bg-green-600 text-white border-green-600 shadow-green-200',
-    inactive: 'bg-white text-green-700 border-green-200 hover:bg-green-50',
+  yellow: {
+    active: 'bg-bauhaus-yellow text-bauhaus-black border-bauhaus-black shadow-hard-sm',
+    inactive: 'bg-white text-bauhaus-black border-bauhaus-black hover:bg-bauhaus-yellow/10',
   },
 };
 
@@ -52,9 +52,9 @@ const TierSelector = ({ selected, onChange, readOnly = false }) => {
               type="button"
               onClick={() => !readOnly && onChange(tier.value)}
               disabled={readOnly}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all duration-200 flex items-center gap-1.5 ${
+              className={`px-4 py-2 text-sm font-bold border-2 transition-all duration-200 flex items-center gap-1.5 uppercase tracking-wider ${
                 isSelected
-                  ? `${colors.active} shadow-md`
+                  ? colors.active
                   : `${colors.inactive} ${readOnly ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`
               }`}
             >
@@ -64,7 +64,7 @@ const TierSelector = ({ selected, onChange, readOnly = false }) => {
           );
         })}
       </div>
-      <p className="text-xs text-slate-500 leading-relaxed bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
+      <p className="text-xs text-bauhaus-black/60 leading-relaxed bg-bauhaus-muted px-3 py-2 border-2 border-bauhaus-black font-medium">
         {selectedTier.description}
       </p>
     </div>
@@ -76,9 +76,9 @@ export default TierSelector;
 // Helper for formatting tier display across the app
 export const formatTier = (tier) => {
   const map = {
-    tier1: { label: 'Tier 1', classes: 'bg-blue-100 text-blue-700' },
-    tier2: { label: 'Tier 2', classes: 'bg-slate-100 text-slate-600' },
-    mass_recruiter: { label: 'Mass Recruiter', classes: 'bg-green-100 text-green-700' },
+    tier1: { label: 'Tier 1', classes: 'bg-bauhaus-blue text-white border-2 border-bauhaus-black' },
+    tier2: { label: 'Tier 2', classes: 'bg-bauhaus-muted text-bauhaus-black border-2 border-bauhaus-black' },
+    mass_recruiter: { label: 'Mass Recruiter', classes: 'bg-bauhaus-yellow text-bauhaus-black border-2 border-bauhaus-black' },
   };
-  return map[tier] || { label: tier || 'Tier 2', classes: 'bg-slate-100 text-slate-600' };
+  return map[tier] || { label: tier || 'Tier 2', classes: 'bg-bauhaus-muted text-bauhaus-black border-2 border-bauhaus-black' };
 };

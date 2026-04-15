@@ -1,19 +1,7 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { MapPin, Clock, Briefcase, Award, Target, AlertCircle, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatTier } from '../common/TierSelector';
-
-// Consistent avatar color based on first letter
-const avatarColors = {
-  A: 'bg-red-500', B: 'bg-orange-500', C: 'bg-amber-500', D: 'bg-yellow-500',
-  E: 'bg-lime-500', F: 'bg-green-500', G: 'bg-emerald-500', H: 'bg-teal-500',
-  I: 'bg-cyan-500', J: 'bg-sky-500', K: 'bg-blue-500', L: 'bg-indigo-500',
-  M: 'bg-violet-500', N: 'bg-purple-500', O: 'bg-fuchsia-500', P: 'bg-pink-500',
-  Q: 'bg-rose-500', R: 'bg-red-600', S: 'bg-indigo-600', T: 'bg-emerald-600',
-  U: 'bg-blue-600', V: 'bg-purple-600', W: 'bg-teal-600', X: 'bg-amber-600',
-  Y: 'bg-cyan-600', Z: 'bg-rose-600',
-};
 
 const JobCard = ({ job, onApply, applying, studentProfile }) => {
   const [applyError, setApplyError] = useState('');
@@ -21,7 +9,6 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
   const isExpired = job.deadline && new Date(job.deadline) < new Date();
   const isVerified = studentProfile?.academicVerified === true;
 
-  // Feature 5: Determine button state
   const hasPersonal = studentProfile?.user?.name && studentProfile?.phone && studentProfile?.gender && studentProfile?.dob && studentProfile?.address;
   const hasAcademic = studentProfile?.enrollmentNo && studentProfile?.branch && (studentProfile?.cgpa || studentProfile?.cgpa === 0) && studentProfile?.tenthPercentage && studentProfile?.twelfthPercentage && studentProfile?.passingYear && studentProfile?.currentSemester;
   const hasSkills = studentProfile?.skills?.length > 0;
@@ -29,20 +16,21 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
 
   let buttonText = 'Apply Now';
   let buttonDisabled = applying || isExpired;
-  let buttonClass = 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-200';
+  let buttonClass = 'bg-bauhaus-red text-white border-2 border-bauhaus-black shadow-hard-sm hover:opacity-90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none';
 
   if (isExpired) {
     buttonText = 'Closed';
+    buttonClass = 'bg-bauhaus-muted text-bauhaus-black/50 border-2 border-bauhaus-black cursor-not-allowed';
   } else if (applying) {
     buttonText = 'Applying...';
   } else if (!isVerified) {
     buttonText = 'Verification Pending';
     buttonDisabled = true;
-    buttonClass = 'bg-amber-100 text-amber-700 cursor-not-allowed';
+    buttonClass = 'bg-bauhaus-yellow text-bauhaus-black border-2 border-bauhaus-black cursor-not-allowed';
   } else if (!profileComplete) {
     buttonText = 'Complete Profile';
     buttonDisabled = true;
-    buttonClass = 'bg-slate-100 text-slate-500 cursor-not-allowed';
+    buttonClass = 'bg-bauhaus-muted text-bauhaus-black/50 border-2 border-bauhaus-black cursor-not-allowed';
   }
 
   const handleApply = async (jobId) => {
@@ -52,7 +40,7 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
       return;
     }
     if (!profileComplete) {
-      return; // navigate handled by Link
+      return;
     }
     try {
       await onApply(jobId);
@@ -61,44 +49,38 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
     }
   };
 
-  // Match badge
   const matchBadge = job.matchLevel === 'strong' ? (
-    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
+    <span className="flex items-center gap-1 px-2.5 py-1 text-xs font-black bg-bauhaus-yellow text-bauhaus-black border-2 border-bauhaus-black uppercase">
       <Target className="w-3 h-3" /> Strong Match 🎯
     </span>
   ) : job.matchLevel === 'partial' ? (
-    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+    <span className="px-2.5 py-1 text-xs font-black bg-bauhaus-muted text-bauhaus-black border-2 border-bauhaus-black uppercase">
       Partial Match
     </span>
   ) : null;
 
   const firstLetter = (job.company?.name?.charAt(0) || 'C').toUpperCase();
-  const avatarBg = avatarColors[firstLetter] || 'bg-slate-500';
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl p-5 border border-slate-100 hover:shadow-md hover:-translate-y-0.5 hover:border-indigo-100 transition-all duration-300 group"
-    >
+    <div className="bg-white border-4 border-bauhaus-black p-5 shadow-hard-md hover:-translate-y-0.5 transition-all group">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-xl ${avatarBg} flex items-center justify-center text-lg font-bold text-white overflow-hidden shadow-sm`}>
-            {job.company?.logo?.url ? ( // NEW — was job.company?.logo (string), now .logo.url (object)
+          <div className="w-12 h-12 bg-bauhaus-black flex items-center justify-center text-lg font-black text-white overflow-hidden border-2 border-bauhaus-black">
+            {job.company?.logo?.url ? (
               <img
-                src={job.company.logo.url} // NEW
+                src={job.company.logo.url}
                 alt=""
-                className="w-full h-full object-contain bg-white p-0.5" // NEW — object-contain for logos
-                onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex'; }} // NEW
+                className="w-full h-full object-contain bg-white p-0.5"
+                onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex'; }}
               />
             ) : null}
-            <span className="flex items-center justify-center w-full h-full" style={{ display: job.company?.logo?.url ? 'none' : 'flex' }}> // NEW
-              {firstLetter} // NEW
-            </span> // NEW
+            <span className="flex items-center justify-center w-full h-full" style={{ display: job.company?.logo?.url ? 'none' : 'flex' }}>
+              {firstLetter}
+            </span>
           </div>
           <div>
-            <h3 className="font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors">{job.title}</h3>
-            <p className="text-sm text-slate-500">{job.company?.name}</p>
+            <h3 className="font-black text-bauhaus-black group-hover:text-bauhaus-blue transition-colors uppercase">{job.title}</h3>
+            <p className="text-sm text-bauhaus-black/50 font-medium">{job.company?.name}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -106,7 +88,7 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
           {job.company?.tier && (() => {
             const t = formatTier(job.company.tier);
             return (
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${t.classes}`}>
+              <span className={`px-2 py-0.5 text-xs font-black uppercase ${t.classes}`}>
                 {t.label}
               </span>
             );
@@ -114,30 +96,29 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-3 text-xs text-slate-500">
+      <div className="flex flex-wrap gap-2 mb-3 text-xs text-bauhaus-black/50 font-bold">
         {job.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.location}</span>}
         <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" />{job.jobType}</span>
         {job.package && <span className="flex items-center gap-1"><Award className="w-3 h-3" />{job.package}</span>}
         {job.deadline && (
-          <span className={`flex items-center gap-1 ${isExpired ? 'text-red-500' : ''}`}>
+          <span className={`flex items-center gap-1 ${isExpired ? 'text-bauhaus-red' : ''}`}>
             <Clock className="w-3 h-3" />{isExpired ? 'Expired' : `Deadline: ${new Date(job.deadline).toLocaleDateString()}`}
           </span>
         )}
       </div>
 
-      {job.description && <p className="text-sm text-slate-500 line-clamp-2 mb-3">{job.description}</p>}
+      {job.description && <p className="text-sm text-bauhaus-black/50 line-clamp-2 mb-3 font-medium">{job.description}</p>}
 
-      {/* Skills with match highlighting */}
       {job.requiredSkills?.length > 0 && (
         <div className="mb-3">
           <div className="flex flex-wrap gap-1.5">
             {job.requiredSkills.map((skill, i) => {
               const isMatched = job.matchedSkills?.includes(skill);
               return (
-                <span key={i} className={`px-2.5 py-0.5 rounded-lg text-xs font-medium border ${
+                <span key={i} className={`px-2.5 py-0.5 text-xs font-bold border-2 ${
                   isMatched
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-slate-100 text-slate-500 border-slate-200'
+                    ? 'bg-bauhaus-blue/10 text-bauhaus-blue border-bauhaus-blue'
+                    : 'bg-bauhaus-muted text-bauhaus-black/50 border-bauhaus-black/20'
                 }`}>
                   {skill} {isMatched ? '✓' : '✗'}
                 </span>
@@ -145,20 +126,19 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
             })}
           </div>
           {job.matchScore !== undefined && job.matchScore > 0 && (
-            <p className="text-xs text-slate-400 mt-1.5">
+            <p className="text-xs text-bauhaus-black/40 mt-1.5 font-medium">
               {job.matchedSkills?.length} of {job.requiredSkills.length} required skills matched ({job.matchScore}%)
             </p>
           )}
         </div>
       )}
 
-      {/* Apply error message */}
       {applyError && (
-        <div className="mb-3 p-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-600 flex items-start gap-2">
+        <div className="mb-3 p-3 bg-bauhaus-red text-white text-sm border-2 border-bauhaus-black flex items-start gap-2 font-bold">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <div>
             <p>{applyError}</p>
-            <Link to="/student/profile" className="inline-flex items-center gap-1 mt-1 text-indigo-600 font-medium text-xs hover:text-indigo-700">
+            <Link to="/student/profile" className="inline-flex items-center gap-1 mt-1 text-bauhaus-yellow font-black text-xs hover:underline uppercase">
               Complete Profile <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
@@ -166,12 +146,12 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
       )}
 
       <div className="flex items-center justify-between">
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-bauhaus-black/40 font-bold">
           {job.openings} opening{job.openings > 1 ? 's' : ''} • Min CGPA: {job.minCGPA || 'None'}
         </span>
         {!profileComplete && !isExpired && isVerified === false ? (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-amber-600" title="Your academic records must be verified by admin before you can apply">
+            <span className="text-xs text-bauhaus-yellow font-black" title="Your academic records must be verified by admin before you can apply">
               ⚠️ Verification needed
             </span>
           </div>
@@ -179,26 +159,26 @@ const JobCard = ({ job, onApply, applying, studentProfile }) => {
         {!isVerified && !isExpired ? (
           <button
             onClick={() => handleApply(job._id)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-50 ${buttonClass}`}
+            className={`px-4 py-2 text-sm font-black transition-all uppercase tracking-wider ${buttonClass}`}
           >
             {buttonText}
           </button>
         ) : !profileComplete && isVerified && !isExpired ? (
           <Link to="/student/profile"
-            className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 text-sm font-medium hover:bg-slate-200 transition-colors">
+            className="px-4 py-2 bg-bauhaus-muted text-bauhaus-black text-sm font-black border-2 border-bauhaus-black hover:bg-bauhaus-yellow transition-colors uppercase tracking-wider">
             Complete Profile to Apply
           </Link>
         ) : (
           <button
             onClick={() => handleApply(job._id)}
             disabled={buttonDisabled}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${buttonClass}`}
+            className={`px-4 py-2 text-sm font-black transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed ${buttonClass}`}
           >
             {applying ? 'Applying...' : isExpired ? 'Closed' : 'Apply Now'}
           </button>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 };
 

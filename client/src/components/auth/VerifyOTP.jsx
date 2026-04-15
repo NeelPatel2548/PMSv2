@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { ShieldCheck, Mail, Lock, ArrowRight, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
@@ -38,8 +37,7 @@ const VerifyOTP = () => {
     }
   }, [email, purpose, navigate]);
 
-  // If user is already authenticated (e.g., after login OTP verify),
-  // redirect to their dashboard
+  // If user is already authenticated, redirect to dashboard
   useEffect(() => {
     if (user) {
       if (user.role === 'student') navigate('/student/dashboard', { replace: true });
@@ -96,25 +94,19 @@ const VerifyOTP = () => {
 
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
-    if (loading) return; // prevent double-submit
+    if (loading) return;
     setLoading(true);
     setError('');
     setSuccessMsg('');
     try {
       if (purpose === 'reset') {
-        // Password reset OTP verification
         await api.post('/auth/verify-reset-otp', { email: activeEmail, otp: otpString });
         setStep('newPassword');
         setSuccessMsg('OTP verified. Enter your new password.');
       } else if (type === 'login') {
-        // Login OTP — AuthContext loginVerify sets cookie + calls checkAuth
         await loginVerify(activeEmail, otpString);
-        // useEffect on `user` will redirect to dashboard
       } else {
-        // Registration OTP — backend does NOT set cookie here,
-        // it just creates the account. User must login afterwards.
         const res = await verifyOTP(activeEmail, otpString);
-        // Show success and redirect to login
         setSuccessMsg(res.message || 'Account created successfully! Redirecting to login...');
         setTimeout(() => {
           navigate('/login', { replace: true });
@@ -168,57 +160,50 @@ const VerifyOTP = () => {
     }
   };
 
-  const btnClass = "w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5";
-  const inputClass = "w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm";
-  const iconClass = "absolute left-3.5 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-slate-400";
-
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-slate-50">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 border border-slate-100">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-bauhaus-white">
+      <div className="w-full max-w-md">
+        <div className="bg-white border-4 border-bauhaus-black shadow-hard-lg p-8">
+          {/* Header */}
           <div className="text-center mb-8">
-            {/* Icon */}
-            <div className="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center mx-auto mb-4">
-              {step === 'newPassword'
-                ? <Lock className="w-8 h-8 text-indigo-600" />
-                : step === 'otp'
-                  ? <Mail className="w-8 h-8 text-indigo-600" />
-                  : <ShieldCheck className="w-8 h-8 text-indigo-600" />
-              }
+            {/* Geometric decoration */}
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <div className="w-6 h-6 rounded-full bg-bauhaus-red border-2 border-bauhaus-black" />
+              <div className="w-6 h-6 bg-bauhaus-blue border-2 border-bauhaus-black" />
+              <div className="w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-b-[21px] border-b-bauhaus-yellow" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">
+            <h1 className="text-2xl font-black text-bauhaus-black uppercase tracking-wider">
               {step === 'email' ? 'Forgot Password' : step === 'otp' ? 'Check Your Email' : 'New Password'}
             </h1>
-            <p className="text-slate-500 mt-1.5 text-sm">
+            <p className="text-bauhaus-black/50 mt-2 text-sm font-bold uppercase tracking-wider">
               {step === 'email' ? 'Enter your email to receive a reset OTP'
-                : step === 'otp' ? `Enter the 6-digit code sent to ${activeEmail}`
+                : step === 'otp' ? `6-digit code sent to ${activeEmail}`
                 : 'Set your new password'}
             </p>
           </div>
 
           {error && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-              className="mb-5 p-3 rounded-xl bg-red-50 text-red-600 text-sm border border-red-100 font-medium">{error}</motion.div>
+            <div className="mb-5 p-3 bg-bauhaus-red text-white text-sm border-2 border-bauhaus-black font-bold">{error}</div>
           )}
           {successMsg && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-              className="mb-5 p-3 rounded-xl bg-emerald-50 text-emerald-600 text-sm border border-emerald-100 font-medium flex items-center gap-2">
+            <div className="mb-5 p-3 bg-bauhaus-yellow text-bauhaus-black text-sm border-2 border-bauhaus-black font-bold flex items-center gap-2">
               <CheckCircle className="w-4 h-4 flex-shrink-0" />
               {successMsg}
-            </motion.div>
+            </div>
           )}
 
           {step === 'email' && (
             <form onSubmit={handleForgotPassword} className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Email</label>
+                <label className="block text-xs font-black uppercase tracking-widest text-bauhaus-black/60 mb-2">Email</label>
                 <div className="relative">
-                  <Mail className={iconClass} />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-bauhaus-black/30" />
                   <input type="email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required
-                    className={inputClass} placeholder="you@example.com" id="forgot-email" />
+                    className="bauhaus-input pl-11" placeholder="you@example.com" id="forgot-email" />
                 </div>
               </div>
-              <button type="submit" disabled={loading} className={btnClass}>
+              <button type="submit" disabled={loading}
+                className="w-full py-4 bg-bauhaus-red text-white font-black border-2 border-bauhaus-black shadow-hard-md hover:opacity-90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all uppercase tracking-wider text-sm disabled:opacity-50 flex items-center justify-center gap-2">
                 {loading ? 'Sending...' : 'Send OTP'}{!loading && <ArrowRight className="w-4 h-4" />}
               </button>
             </form>
@@ -227,7 +212,7 @@ const VerifyOTP = () => {
           {step === 'otp' && (
             <form onSubmit={handleVerifyOTP} className="space-y-6">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-3 text-center">OTP Code</label>
+                <label className="block text-xs font-black uppercase tracking-widest text-bauhaus-black/60 mb-3 text-center">OTP Code</label>
                 <div className="flex justify-center gap-3" onPaste={handleOtpPaste}>
                   {otp.map((digit, i) => (
                     <input
@@ -239,20 +224,21 @@ const VerifyOTP = () => {
                       value={digit}
                       onChange={(e) => handleOtpChange(i, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                      className="w-12 h-14 text-center text-xl font-bold rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:scale-105 outline-none transition-all"
+                      className="w-12 h-14 text-center text-xl font-black border-4 border-bauhaus-black focus:border-bauhaus-blue focus:bg-bauhaus-yellow/20 outline-none transition-all"
                       id={`otp-digit-${i}`}
                     />
                   ))}
                 </div>
               </div>
-              <button type="submit" disabled={loading || otpString.length < 6} className={btnClass}>
+              <button type="submit" disabled={loading || otpString.length < 6}
+                className="w-full py-4 bg-bauhaus-blue text-white font-black border-2 border-bauhaus-black shadow-hard-md hover:opacity-90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all uppercase tracking-wider text-sm disabled:opacity-50">
                 {loading ? 'Verifying...' : 'Verify OTP'}
               </button>
               <div className="text-center">
                 <button type="button" onClick={handleResend} disabled={countdown > 0}
-                  className={`text-sm font-semibold transition-colors ${countdown > 0 ? 'text-slate-400 cursor-not-allowed' : 'text-indigo-600 hover:text-indigo-700'}`}>
+                  className={`text-xs font-black uppercase tracking-widest transition-colors ${countdown > 0 ? 'text-bauhaus-black/30 cursor-not-allowed' : 'text-bauhaus-blue hover:text-bauhaus-red'}`}>
                   {countdown > 0 ? (
-                    <span>Resend in <span className="font-mono tabular-nums text-indigo-600">{countdown}s</span></span>
+                    <span>Resend in <span className="font-mono tabular-nums text-bauhaus-red">{countdown}s</span></span>
                   ) : 'Resend OTP'}
                 </button>
               </div>
@@ -262,24 +248,25 @@ const VerifyOTP = () => {
           {step === 'newPassword' && (
             <form onSubmit={handleResetPassword} className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">New Password</label>
+                <label className="block text-xs font-black uppercase tracking-widest text-bauhaus-black/60 mb-2">New Password</label>
                 <div className="relative">
-                  <Lock className={iconClass} />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-bauhaus-black/30" />
                   <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6}
-                    className={inputClass} placeholder="Min. 6 characters" id="reset-new-password" />
+                    className="bauhaus-input pl-11" placeholder="Min. 6 characters" id="reset-new-password" />
                 </div>
               </div>
-              <button type="submit" disabled={loading} className={btnClass}>
+              <button type="submit" disabled={loading}
+                className="w-full py-4 bg-bauhaus-red text-white font-black border-2 border-bauhaus-black shadow-hard-md hover:opacity-90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all uppercase tracking-wider text-sm disabled:opacity-50">
                 {loading ? 'Resetting...' : 'Reset Password'}
               </button>
             </form>
           )}
 
-          <p className="mt-6 text-center text-sm text-slate-500">
-            <Link to="/login" className="text-indigo-600 hover:text-indigo-700 font-semibold">Back to Login</Link>
+          <p className="mt-6 text-center text-sm text-bauhaus-black/50 font-bold">
+            <Link to="/login" className="text-bauhaus-blue hover:text-bauhaus-red font-black uppercase tracking-wider transition-colors">Back to Login</Link>
           </p>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };

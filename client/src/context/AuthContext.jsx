@@ -25,7 +25,13 @@ export const AuthProvider = ({ children }) => {
   // Socket.IO — connect when user is set, disconnect on logout
   useEffect(() => {
     if (user) {
-      const socket = connectSocket();
+      let socket;
+      try {
+        socket = connectSocket();
+      } catch (err) {
+        console.warn('[AuthContext] Socket connection failed:', err.message);
+        return;
+      }
 
       // Listen for real-time notifications
       socket.on('notification', (notif) => {

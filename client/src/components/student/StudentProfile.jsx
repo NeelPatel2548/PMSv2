@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
 import { Save, PlusCircle, X, Upload, Linkedin, Github, CheckCircle, FileDown } from 'lucide-react';
 import api from '../../services/api';
 import Loader from '../common/Loader';
@@ -271,13 +270,13 @@ const StudentProfile = () => {
   };
 
   if (loading) return <Loader />;
-  if (!profile) return <p className="text-center text-slate-500 mt-10">Profile not found.</p>;
+  if (!profile) return <p className="text-center text-bauhaus-black/50 mt-10 font-bold uppercase tracking-wider">Profile not found.</p>;
 
-  const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm";
-  const inputErr = "w-full px-4 py-2.5 rounded-xl border border-red-300 focus:ring-2 focus:ring-red-500/20 focus:border-red-400 outline-none transition-all text-sm";
-  const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
-  const readOnly = "w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-100 text-sm text-slate-500 cursor-not-allowed";
-  const errText = "text-xs text-red-500 mt-1 font-medium";
+  const inputClass = "bauhaus-input";
+  const inputErr = "w-full px-4 py-2.5 border-2 border-bauhaus-red shadow-[2px_2px_0px_0px_#D02020] outline-none transition-all text-sm font-medium";
+  const labelClass = "block text-xs font-black uppercase tracking-widest text-bauhaus-black/60 mb-1.5";
+  const readOnlyClass = "w-full px-4 py-2.5 bg-bauhaus-muted border-2 border-bauhaus-black/20 text-sm text-bauhaus-black/50 cursor-not-allowed font-medium";
+  const errText = "text-xs text-bauhaus-red mt-1 font-bold";
   const getInputClass = (field) => errors[field] ? inputErr : inputClass;
 
   const studentName = profile._userName || profile.user?.name || '';
@@ -285,36 +284,35 @@ const StudentProfile = () => {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold text-slate-800 mb-6">My Profile</h1>
-      </motion.div>
+      <div>
+        <h1 className="text-2xl font-black text-bauhaus-black mb-6 uppercase tracking-wider">My Profile</h1>
+      </div>
 
       {message.text && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className={`mb-4 p-3 rounded-xl text-sm flex items-center gap-2 ${
-            message.type === 'success'
-              ? 'bg-green-50 text-green-600 border border-green-100'
-              : 'bg-red-50 text-red-700 border-l-4 border-red-500'
-          }`}>
+        <div className={`mb-4 p-3 text-sm flex items-center gap-2 border-2 border-bauhaus-black font-bold ${
+          message.type === 'success'
+            ? 'bg-bauhaus-yellow text-bauhaus-black'
+            : 'bg-bauhaus-red text-white'
+        }`}>
           {message.type === 'success' && <CheckCircle className="w-4 h-4" />}
           {message.text}
-        </motion.div>
+        </div>
       )}
 
       <div className="space-y-6">
 
         {/* Profile Picture */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Profile Picture</h2>
+        <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
+          <h2 className="text-lg font-black text-bauhaus-black mb-4 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2">Profile Picture</h2>
           <div className="flex items-center gap-6">
 
-            {/* Avatar circle */}
+            {/* Avatar */}
             <div className="relative w-24 h-24 flex-shrink-0">
               {displayUrl && (
                 <img
                   src={displayUrl}
                   alt="Profile"
-                  className="w-24 h-24 rounded-full object-cover"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-bauhaus-black"
                   onError={(e) => {
                     e.target.style.display = 'none';
                     if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
@@ -322,7 +320,7 @@ const StudentProfile = () => {
                 />
               )}
               <div
-                className="w-24 h-24 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-2xl font-semibold"
+                className="w-24 h-24 rounded-full bg-bauhaus-blue flex items-center justify-center text-white text-2xl font-black border-4 border-bauhaus-black"
                 style={{ display: displayUrl ? 'none' : 'flex' }}
               >
                 {studentName.charAt(0).toUpperCase() || 'S'}
@@ -331,7 +329,7 @@ const StudentProfile = () => {
               {/* Camera overlay */}
               <label
                 htmlFor="profilePicInput"
-                className="absolute bottom-0 right-0 w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-indigo-700 transition-colors shadow-md"
+                className="absolute bottom-0 right-0 w-7 h-7 bg-bauhaus-red rounded-full flex items-center justify-center cursor-pointer hover:opacity-90 transition-colors border-2 border-bauhaus-black"
                 title="Change profile picture"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
@@ -356,41 +354,41 @@ const StudentProfile = () => {
                   <img
                     src={previewUrl}
                     alt="Preview"
-                    className="w-12 h-12 rounded-full object-cover border-2 border-indigo-300"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-bauhaus-blue"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={handleUpload}
                       disabled={picUploading}
-                      className="px-4 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition"
+                      className="px-4 py-1.5 bg-bauhaus-blue text-white text-sm font-bold border-2 border-bauhaus-black hover:opacity-90 disabled:opacity-50 transition uppercase"
                     >
                       {picUploading ? 'Saving...' : 'Save photo'}
                     </button>
                     <button
                       onClick={handleCancel}
-                      className="px-4 py-1.5 border border-slate-200 text-slate-600 text-sm rounded-lg hover:bg-slate-50 transition"
+                      className="px-4 py-1.5 border-2 border-bauhaus-black text-bauhaus-black text-sm font-bold hover:bg-bauhaus-muted transition uppercase"
                     >
                       Cancel
                     </button>
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-bauhaus-black/50 font-medium">
                   {profilePicture?.url
                     ? 'Click the camera icon to change your photo'
                     : 'No profile picture uploaded yet.'}
                 </p>
               )}
-              <p className="text-xs text-slate-400">JPG, PNG or WEBP · max 2MB</p>
-              {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
+              <p className="text-xs text-bauhaus-black/30 font-bold uppercase tracking-wider">JPG, PNG or WEBP · max 2MB</p>
+              {uploadError && <p className="text-xs text-bauhaus-red font-bold">{uploadError}</p>}
             </div>
 
           </div>
         </div>
 
         {/* Personal Info */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Personal Information</h2>
+        <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
+          <h2 className="text-lg font-black text-bauhaus-black mb-4 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2">Personal Information</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>Name</label>
@@ -403,7 +401,7 @@ const StudentProfile = () => {
             </div>
             <div>
               <label className={labelClass}>Email</label>
-              <input type="email" value={profile.user?.email || ''} readOnly className={readOnly} />
+              <input type="email" value={profile.user?.email || ''} readOnly className={readOnlyClass} />
             </div>
             <div>
               <label className={labelClass}>Phone</label>
@@ -460,19 +458,19 @@ const StudentProfile = () => {
         </div>
 
         {/* Academic Records */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-lg font-semibold text-slate-800">Academic Records</h2>
+        <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
+          <div className="flex items-center justify-between mb-1 border-b-2 border-bauhaus-black pb-2">
+            <h2 className="text-lg font-black text-bauhaus-black uppercase tracking-wider">Academic Records</h2>
             {profile.academicVerified
-              ? <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">✓ Verified</span>
+              ? <span className="px-2.5 py-1 text-xs font-black bg-bauhaus-blue text-white border-2 border-bauhaus-black uppercase">✓ Verified</span>
               : (profile.enrollmentNo || profile.branch) && (
-                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">⏳ Pending</span>
+                <span className="px-2.5 py-1 text-xs font-black bg-bauhaus-yellow text-bauhaus-black border-2 border-bauhaus-black uppercase">⏳ Pending</span>
               )
             }
           </div>
 
           {profile.academicVerified ? (
-            <div className="flex items-center gap-2 mb-4 p-3 rounded-xl bg-green-50 border border-green-100 text-green-700 text-sm">
+            <div className="flex items-center gap-2 mb-4 p-3 bg-bauhaus-blue/10 border-2 border-bauhaus-blue text-bauhaus-blue text-sm font-bold">
               <CheckCircle className="w-4 h-4" />
               <span>
                 Your academic records have been verified by the administration.
@@ -480,11 +478,11 @@ const StudentProfile = () => {
               </span>
             </div>
           ) : profile.enrollmentNo || profile.branch || profile.cgpa != null ? (
-            <div className="flex items-center gap-2 mb-4 p-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-sm">
+            <div className="flex items-center gap-2 mb-4 p-3 bg-bauhaus-yellow/20 border-2 border-bauhaus-yellow text-bauhaus-black text-sm font-bold">
               <span>⏳ Your academic records are pending admin verification. You can still make changes.</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 mb-4 p-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 text-sm">
+            <div className="flex items-center gap-2 mb-4 p-3 bg-bauhaus-blue/10 border-2 border-bauhaus-blue text-bauhaus-blue text-sm font-bold">
               <span>ℹ️ Fill in your academic details and save for admin verification.</span>
             </div>
           )}
@@ -493,7 +491,7 @@ const StudentProfile = () => {
             <div>
               <label className={labelClass}>Enrollment No</label>
               {profile.academicVerified
-                ? <input value={profile.enrollmentNo || '—'} readOnly className={readOnly} />
+                ? <input value={profile.enrollmentNo || '—'} readOnly className={readOnlyClass} />
                 : (
                   <input
                     type="text"
@@ -514,7 +512,7 @@ const StudentProfile = () => {
             <div>
               <label className={labelClass}>Branch</label>
               {profile.academicVerified
-                ? <input value={profile.branch || '—'} readOnly className={readOnly} />
+                ? <input value={profile.branch || '—'} readOnly className={readOnlyClass} />
                 : (
                   <select
                     value={profile.branch || ''}
@@ -536,7 +534,7 @@ const StudentProfile = () => {
             <div>
               <label className={labelClass}>Passing Year</label>
               {profile.academicVerified
-                ? <input value={profile.passingYear || '—'} readOnly className={readOnly} />
+                ? <input value={profile.passingYear || '—'} readOnly className={readOnlyClass} />
                 : (
                   <input
                     type="number"
@@ -554,7 +552,7 @@ const StudentProfile = () => {
             <div>
               <label className={labelClass}>Current Semester</label>
               {profile.academicVerified
-                ? <input value={profile.currentSemester || '—'} readOnly className={readOnly} />
+                ? <input value={profile.currentSemester || '—'} readOnly className={readOnlyClass} />
                 : (
                   <input
                     type="number"
@@ -573,7 +571,7 @@ const StudentProfile = () => {
             <div>
               <label className={labelClass}>CGPA</label>
               {profile.academicVerified
-                ? <input value={profile.cgpa ?? '—'} readOnly className={readOnly} />
+                ? <input value={profile.cgpa ?? '—'} readOnly className={readOnlyClass} />
                 : (
                   <input
                     type="number"
@@ -592,7 +590,7 @@ const StudentProfile = () => {
             <div>
               <label className={labelClass}>10th %</label>
               {profile.academicVerified
-                ? <input value={profile.tenthPercentage ?? '—'} readOnly className={readOnly} />
+                ? <input value={profile.tenthPercentage ?? '—'} readOnly className={readOnlyClass} />
                 : (
                   <input
                     type="number"
@@ -611,7 +609,7 @@ const StudentProfile = () => {
             <div>
               <label className={labelClass}>12th %</label>
               {profile.academicVerified
-                ? <input value={profile.twelfthPercentage ?? '—'} readOnly className={readOnly} />
+                ? <input value={profile.twelfthPercentage ?? '—'} readOnly className={readOnlyClass} />
                 : (
                   <input
                     type="number"
@@ -630,7 +628,7 @@ const StudentProfile = () => {
             <div>
               <label className={labelClass}>Active Backlogs</label>
               {profile.academicVerified
-                ? <input value={profile.activeBacklogs ?? 0} readOnly className={readOnly} />
+                ? <input value={profile.activeBacklogs ?? 0} readOnly className={readOnlyClass} />
                 : (
                   <input
                     type="number"
@@ -644,18 +642,18 @@ const StudentProfile = () => {
             </div>
             <div>
               <label className={labelClass}>Placement Status</label>
-              <input value={profile.placementStatus || 'unplaced'} readOnly className={readOnly} />
+              <input value={profile.placementStatus || 'unplaced'} readOnly className={readOnlyClass} />
             </div>
           </div>
         </div>
 
         {/* Online Profiles */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Online Profiles</h2>
+        <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
+          <h2 className="text-lg font-black text-bauhaus-black mb-4 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2">Online Profiles</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="relative">
               <label className={labelClass}>LinkedIn</label>
-              <Linkedin className="absolute left-3 bottom-3 w-4 h-4 text-slate-400" />
+              <Linkedin className="absolute left-3 bottom-3 w-4 h-4 text-bauhaus-black/30" />
               <input
                 type="url"
                 value={profile.linkedin || ''}
@@ -666,7 +664,7 @@ const StudentProfile = () => {
             </div>
             <div className="relative">
               <label className={labelClass}>GitHub</label>
-              <Github className="absolute left-3 bottom-3 w-4 h-4 text-slate-400" />
+              <Github className="absolute left-3 bottom-3 w-4 h-4 text-bauhaus-black/30" />
               <input
                 type="url"
                 value={profile.github || ''}
@@ -679,8 +677,8 @@ const StudentProfile = () => {
         </div>
 
         {/* Skills */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Skills</h2>
+        <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
+          <h2 className="text-lg font-black text-bauhaus-black mb-4 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2">Skills</h2>
           <SkillsSelector
             selected={profile.skills || []}
             onChange={(skills) => handleChange('skills', skills)}
@@ -689,22 +687,22 @@ const StudentProfile = () => {
         </div>
 
         {/* Projects */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Projects</h2>
+        <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
+          <h2 className="text-lg font-black text-bauhaus-black mb-4 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2">Projects</h2>
           <div className="space-y-3 mb-4">
             {(profile.projects || []).map((p, i) => (
-              <div key={i} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start justify-between">
+              <div key={i} className="p-3 bg-bauhaus-muted border-2 border-bauhaus-black flex items-start justify-between">
                 <div>
-                  <p className="font-medium text-slate-800">{p.title}</p>
-                  {p.description && <p className="text-xs text-slate-500 mt-0.5">{p.description}</p>}
+                  <p className="font-bold text-bauhaus-black">{p.title}</p>
+                  {p.description && <p className="text-xs text-bauhaus-black/50 mt-0.5 font-medium">{p.description}</p>}
                   {p.link && (
-                    <a href={p.link} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 mt-0.5 block">
+                    <a href={p.link} target="_blank" rel="noreferrer" className="text-xs text-bauhaus-blue mt-0.5 block font-bold hover:text-bauhaus-red transition-colors">
                       {p.link}
                     </a>
                   )}
                 </div>
-                <button onClick={() => removeProject(i)} className="p-1 rounded-lg hover:bg-red-100">
-                  <X className="w-4 h-4 text-slate-400 hover:text-red-500" />
+                <button onClick={() => removeProject(i)} className="p-1 hover:bg-bauhaus-red/10 transition-colors">
+                  <X className="w-4 h-4 text-bauhaus-black/40 hover:text-bauhaus-red" />
                 </button>
               </div>
             ))}
@@ -735,7 +733,7 @@ const StudentProfile = () => {
               <button
                 type="button"
                 onClick={addProject}
-                className="px-3 py-2 rounded-xl bg-indigo-600 text-white text-sm hover:bg-indigo-700 transition"
+                className="px-3 py-2 bg-bauhaus-blue text-white border-2 border-bauhaus-black hover:opacity-90 transition"
               >
                 <PlusCircle className="w-4 h-4" />
               </button>
@@ -744,22 +742,22 @@ const StudentProfile = () => {
         </div>
 
         {/* Certifications */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Certifications</h2>
+        <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
+          <h2 className="text-lg font-black text-bauhaus-black mb-4 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2">Certifications</h2>
           <div className="space-y-3 mb-4">
             {(profile.certifications || []).map((c, i) => (
-              <div key={i} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start justify-between">
+              <div key={i} className="p-3 bg-bauhaus-muted border-2 border-bauhaus-black flex items-start justify-between">
                 <div>
-                  <p className="font-medium text-slate-800">{c.title}</p>
-                  <p className="text-xs text-slate-500">{c.issuedBy}{c.year ? ` • ${c.year}` : ''}</p>
+                  <p className="font-bold text-bauhaus-black">{c.title}</p>
+                  <p className="text-xs text-bauhaus-black/50 font-medium">{c.issuedBy}{c.year ? ` • ${c.year}` : ''}</p>
                   {c.link && (
-                    <a href={c.link} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 mt-0.5 block">
+                    <a href={c.link} target="_blank" rel="noreferrer" className="text-xs text-bauhaus-blue mt-0.5 block font-bold hover:text-bauhaus-red transition-colors">
                       {c.link}
                     </a>
                   )}
                 </div>
-                <button onClick={() => removeCert(i)} className="p-1 rounded-lg hover:bg-red-100">
-                  <X className="w-4 h-4 text-slate-400 hover:text-red-500" />
+                <button onClick={() => removeCert(i)} className="p-1 hover:bg-bauhaus-red/10 transition-colors">
+                  <X className="w-4 h-4 text-bauhaus-black/40 hover:text-bauhaus-red" />
                 </button>
               </div>
             ))}
@@ -797,7 +795,7 @@ const StudentProfile = () => {
               <button
                 type="button"
                 onClick={addCert}
-                className="px-3 py-2 rounded-xl bg-indigo-600 text-white text-sm hover:bg-indigo-700 transition"
+                className="px-3 py-2 bg-bauhaus-blue text-white border-2 border-bauhaus-black hover:opacity-90 transition"
               >
                 <PlusCircle className="w-4 h-4" />
               </button>
@@ -806,8 +804,8 @@ const StudentProfile = () => {
         </div>
 
         {/* Internship Experience */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Internship Experience</h2>
+        <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
+          <h2 className="text-lg font-black text-bauhaus-black mb-4 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2">Internship Experience</h2>
           <textarea
             value={profile.internshipExperience || ''}
             onChange={(e) => handleChange('internshipExperience', e.target.value)}
@@ -818,14 +816,14 @@ const StudentProfile = () => {
         </div>
 
         {/* Resume */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Resume</h2>
+        <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
+          <h2 className="text-lg font-black text-bauhaus-black mb-4 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2">Resume</h2>
           {profile.resumeUrl && (
-            <p className="text-sm text-green-600 mb-3 flex items-center gap-1.5">
+            <p className="text-sm text-bauhaus-blue mb-3 flex items-center gap-1.5 font-bold">
               <CheckCircle className="w-4 h-4" /> Resume uploaded
             </p>
           )}
-          <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-medium hover:bg-slate-200 transition cursor-pointer">
+          <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-bauhaus-muted text-bauhaus-black text-sm font-bold hover:bg-bauhaus-yellow/30 transition cursor-pointer border-2 border-bauhaus-black uppercase tracking-wider">
             <Upload className="w-4 h-4" />
             {uploading ? 'Uploading...' : 'Upload Resume (PDF, max 2MB)'}
             <input
@@ -839,7 +837,7 @@ const StudentProfile = () => {
           <button
             onClick={() => generateResumePDF(profile)}
             disabled={!profile.user?.name || !profile.branch}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-100 text-indigo-700 text-sm font-medium hover:bg-indigo-200 transition disabled:opacity-40 disabled:cursor-not-allowed ml-2"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-bauhaus-blue/10 text-bauhaus-blue text-sm font-bold hover:bg-bauhaus-blue/20 transition disabled:opacity-40 disabled:cursor-not-allowed ml-2 border-2 border-bauhaus-blue uppercase tracking-wider"
             id="generate-resume-pdf"
             title={!profile.user?.name || !profile.branch ? 'Complete your profile first (name & branch required)' : 'Generate a PDF resume from your profile data'}
           >
@@ -857,7 +855,7 @@ const StudentProfile = () => {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-60 flex items-center gap-2 shadow-xl shadow-indigo-500/25 hover:-translate-y-0.5"
+          className="px-6 py-3 bg-bauhaus-red text-white font-black hover:opacity-90 transition-all disabled:opacity-60 flex items-center gap-2 border-4 border-bauhaus-black shadow-hard-lg active:translate-x-[4px] active:translate-y-[4px] active:shadow-none uppercase tracking-wider"
         >
           <Save className="w-5 h-5" />
           {saving ? 'Saving...' : 'Save Profile'}
@@ -869,7 +867,7 @@ const StudentProfile = () => {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25"
+          className="w-full py-3 bg-bauhaus-red text-white font-black hover:opacity-90 transition-all disabled:opacity-60 flex items-center justify-center gap-2 border-4 border-bauhaus-black shadow-hard-md active:translate-x-[2px] active:translate-y-[2px] active:shadow-none uppercase tracking-wider"
         >
           <Save className="w-5 h-5" />
           {saving ? 'Saving...' : 'Save Profile'}

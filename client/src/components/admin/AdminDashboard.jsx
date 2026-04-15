@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Users, Building2, Briefcase, TrendingUp, Award, BarChart3 } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../../services/api';
 import Loader from '../common/Loader';
 
-const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899'];
+const COLORS = ['#1A1A1A', '#D02020', '#FFD600', '#2563EB'];
 
 const AdminDashboard = () => {
   const [data, setData] = useState(null);
@@ -22,17 +21,17 @@ const AdminDashboard = () => {
   }, []);
 
   if (loading) return <Loader />;
-  if (!data) return <p className="text-center text-slate-500 mt-10">Failed to load dashboard.</p>;
+  if (!data) return <p className="text-center text-bauhaus-black/50 mt-10 font-bold uppercase">Failed to load dashboard.</p>;
 
   const { stats, branchWiseStats } = data;
 
   const statCards = [
-    { label: 'Total Students', value: stats.totalStudents, icon: Users, color: 'from-indigo-500 to-indigo-600' },
-    { label: 'Placed', value: stats.placedStudents, icon: Award, color: 'from-emerald-500 to-green-500' },
-    { label: 'Companies', value: stats.totalCompanies, icon: Building2, color: 'from-purple-500 to-violet-500' },
-    { label: 'Active Jobs', value: stats.activeJobs, icon: Briefcase, color: 'from-amber-500 to-orange-500' },
-    { label: 'Applications', value: stats.totalApplications, icon: TrendingUp, color: 'from-cyan-500 to-teal-500' },
-    { label: 'Placement %', value: `${stats.placementRate}%`, icon: BarChart3, color: 'from-pink-500 to-rose-500' },
+    { label: 'Total Students', value: stats.totalStudents, icon: Users, color: 'bg-bauhaus-blue' },
+    { label: 'Placed', value: stats.placedStudents, icon: Award, color: 'bg-bauhaus-yellow' },
+    { label: 'Companies', value: stats.totalCompanies, icon: Building2, color: 'bg-bauhaus-red' },
+    { label: 'Active Jobs', value: stats.activeJobs, icon: Briefcase, color: 'bg-bauhaus-black' },
+    { label: 'Applications', value: stats.totalApplications, icon: TrendingUp, color: 'bg-bauhaus-blue' },
+    { label: 'Placement %', value: `${stats.placementRate}%`, icon: BarChart3, color: 'bg-bauhaus-red' },
   ];
 
   const pieData = [
@@ -44,54 +43,51 @@ const AdminDashboard = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold text-slate-800">Admin Dashboard 🛡️</h1>
-        <p className="text-slate-500 mt-1">Platform-wide placement overview</p>
-      </motion.div>
+      <div>
+        <h1 className="text-2xl font-black text-bauhaus-black uppercase tracking-wider">Admin Dashboard 🛡️</h1>
+        <p className="text-bauhaus-black/50 mt-1 font-medium">Platform-wide placement overview</p>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {statCards.map((card, i) => (
-          <motion.div key={card.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-3 shadow-lg`}>
-              <card.icon className="w-7 h-7 text-white" />
+        {statCards.map((card) => (
+          <div key={card.label} className="bg-white border-4 border-bauhaus-black p-4 shadow-hard-sm hover:-translate-y-0.5 transition-transform">
+            <div className={`w-14 h-14 ${card.color} flex items-center justify-center mb-3 border-2 border-bauhaus-black ${card.color === 'bg-bauhaus-yellow' ? 'text-bauhaus-black' : 'text-white'}`}>
+              <card.icon className="w-7 h-7" />
             </div>
-            <p className="text-2xl font-bold text-slate-800">{card.value}</p>
-            <p className="text-sm text-slate-500">{card.label}</p>
-          </motion.div>
+            <p className="text-2xl font-black text-bauhaus-black">{card.value}</p>
+            <p className="text-xs font-bold text-bauhaus-black/50 uppercase tracking-wider">{card.label}</p>
+          </div>
         ))}
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Placement Pie */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Placement Status</h2>
+        <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
+          <h2 className="text-lg font-black text-bauhaus-black mb-4 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2">Placement Status</h2>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                 {pieData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
               </Pie>
-              <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '12px' }} />
+              <Tooltip contentStyle={{ border: '2px solid #1A1A1A', borderRadius: '0', boxShadow: '3px 3px 0 #1A1A1A', fontSize: '12px', fontWeight: 700 }} />
             </PieChart>
           </ResponsiveContainer>
-        </motion.div>
+        </div>
 
         {/* Branch Bar */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Branch-wise Placements</h2>
+        <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
+          <h2 className="text-lg font-black text-bauhaus-black mb-4 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2">Branch-wise Placements</h2>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={barData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="branch" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '12px' }} />
-              <Bar dataKey="total" fill="#e2e8f0" name="Total" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="placed" fill="#6366f1" name="Placed" radius={[4, 4, 0, 0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" />
+              <XAxis dataKey="branch" tick={{ fontSize: 12, fontWeight: 700 }} />
+              <YAxis tick={{ fontSize: 12, fontWeight: 700 }} />
+              <Tooltip contentStyle={{ border: '2px solid #1A1A1A', borderRadius: '0', boxShadow: '3px 3px 0 #1A1A1A', fontSize: '12px', fontWeight: 700 }} />
+              <Bar dataKey="total" fill="#E5E5E5" name="Total" radius={0} />
+              <Bar dataKey="placed" fill="#1A1A1A" name="Placed" radius={0} />
             </BarChart>
           </ResponsiveContainer>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

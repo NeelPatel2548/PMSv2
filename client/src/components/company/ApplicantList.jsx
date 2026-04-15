@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Users, ArrowLeft, FileText, CheckCircle, XCircle, Calendar, Download } from 'lucide-react';
 import api from '../../services/api';
 import Loader from '../common/Loader';
 
 const statusColors = {
-  applied: 'bg-blue-100 text-blue-700',
-  shortlisted: 'bg-amber-100 text-amber-700',
-  interview: 'bg-purple-100 text-purple-700',
-  selected: 'bg-green-100 text-green-700',
-  rejected: 'bg-red-100 text-red-700',
-  withdrawn: 'bg-slate-100 text-slate-500',
+  applied: 'bg-bauhaus-blue text-white',
+  shortlisted: 'bg-bauhaus-yellow text-bauhaus-black',
+  interview: 'bg-bauhaus-red text-white',
+  selected: 'bg-bauhaus-blue text-white',
+  rejected: 'bg-bauhaus-muted text-bauhaus-black/60',
+  withdrawn: 'bg-bauhaus-muted text-bauhaus-black/40',
 };
 
 const TABS = ['all', 'applied', 'shortlisted', 'interview', 'selected', 'rejected'];
@@ -28,7 +27,6 @@ const ApplicantList = () => {
   const [pagination, setPagination] = useState(null);
   const [exporting, setExporting] = useState(false);
 
-  // Interview form state
   const [interviewFor, setInterviewFor] = useState(null);
   const [interviewForm, setInterviewForm] = useState({
     roundName: '', roundNumber: 1, scheduledAt: '', mode: 'online', venue: '', meetingLink: ''
@@ -48,7 +46,7 @@ const ApplicantList = () => {
           setApplicants(data.results || data);
           if (data.pagination) setPagination(data.pagination);
         }
-      } catch { /* ignore */ } finally { setLoading(false); }
+      } catch {} finally { setLoading(false); }
     };
     fetchData();
   }, [jobId, page]);
@@ -63,41 +61,29 @@ const ApplicantList = () => {
     setUpdating(appId);
     try {
       const res = await api.put(`/company/applications/${appId}/status`, { status });
-      if (res.data.success) {
-        setApplicants(prev => prev.map(a => a._id === appId ? { ...a, status } : a));
-      }
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update status');
-    } finally { setUpdating(null); }
+      if (res.data.success) setApplicants(prev => prev.map(a => a._id === appId ? { ...a, status } : a));
+    } catch (err) { alert(err.response?.data?.message || 'Failed to update status'); }
+    finally { setUpdating(null); }
   };
 
   const handleScheduleInterview = async (appId) => {
-    if (!interviewForm.roundName.trim() || !interviewForm.scheduledAt) {
-      alert('Please fill in round name and date/time');
-      return;
-    }
+    if (!interviewForm.roundName.trim() || !interviewForm.scheduledAt) { alert('Please fill in round name and date/time'); return; }
     setScheduling(true);
     try {
-      const res = await api.post('/company/interviews', {
-        applicationId: appId,
-        ...interviewForm
-      });
+      const res = await api.post('/company/interviews', { applicationId: appId, ...interviewForm });
       if (res.data.success) {
         setApplicants(prev => prev.map(a => a._id === appId ? { ...a, status: 'interview', currentRound: interviewForm.roundName } : a));
         setInterviewFor(null);
         setInterviewForm({ roundName: '', roundNumber: 1, scheduledAt: '', mode: 'online', venue: '', meetingLink: '' });
         alert('Interview scheduled successfully!');
       }
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to schedule interview');
-    } finally { setScheduling(false); }
+    } catch (err) { alert(err.response?.data?.message || 'Failed to schedule interview'); }
+    finally { setScheduling(false); }
   };
 
   if (loading) return <Loader />;
 
   const filtered = filter === 'all' ? applicants : applicants.filter(a => a.status === filter);
-
-  // Stats
   const stats = {
     total: applicants.length,
     applied: applicants.filter(a => a.status === 'applied').length,
@@ -107,18 +93,18 @@ const ApplicantList = () => {
     rejected: applicants.filter(a => a.status === 'rejected').length,
   };
 
-  const inputClass = "w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all";
+  const inputClass = "bauhaus-input";
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/company/jobs')} className="p-2 -ml-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition">
+        <button onClick={() => navigate('/company/jobs')} className="p-2 -ml-2 text-bauhaus-black/40 hover:text-bauhaus-black hover:bg-bauhaus-muted transition">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-800">Applicants</h1>
-          {job && <p className="text-slate-500 text-sm mt-0.5">{job.title}</p>}
+          <h1 className="text-2xl font-black text-bauhaus-black uppercase tracking-wider">Applicants</h1>
+          {job && <p className="text-bauhaus-black/50 text-sm mt-0.5 font-medium">{job.title}</p>}
         </div>
         <button
           onClick={async () => {
@@ -127,38 +113,33 @@ const ApplicantList = () => {
               const res = await api.get(`/company/jobs/${jobId}/export`, { responseType: 'blob' });
               const url = window.URL.createObjectURL(new Blob([res.data]));
               const a = document.createElement('a');
-              a.href = url;
-              a.download = `applicants_${jobId}.csv`;
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
+              a.href = url; a.download = `applicants_${jobId}.csv`;
+              document.body.appendChild(a); a.click(); a.remove();
               window.URL.revokeObjectURL(url);
-            } catch (err) {
-              alert('Failed to export CSV');
-            } finally { setExporting(false); }
+            } catch { alert('Failed to export CSV'); }
+            finally { setExporting(false); }
           }}
           disabled={exporting || applicants.length === 0}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 shadow-sm"
+          className="flex items-center gap-1.5 px-4 py-2 bg-bauhaus-blue text-white text-sm font-black border-2 border-bauhaus-black hover:opacity-90 transition disabled:opacity-50 uppercase tracking-wider"
           id="export-csv-btn"
         >
-          <Download className="w-4 h-4" />
-          {exporting ? 'Exporting...' : 'Export CSV'}
+          <Download className="w-4 h-4" />{exporting ? 'Exporting...' : 'Export CSV'}
         </button>
       </div>
 
       {/* Stats Row */}
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
         {[
-          { label: 'Total', value: stats.total, color: 'bg-slate-100 text-slate-700' },
-          { label: 'Applied', value: stats.applied, color: 'bg-blue-50 text-blue-700' },
-          { label: 'Shortlisted', value: stats.shortlisted, color: 'bg-amber-50 text-amber-700' },
-          { label: 'Interview', value: stats.interview, color: 'bg-purple-50 text-purple-700' },
-          { label: 'Selected', value: stats.selected, color: 'bg-green-50 text-green-700' },
-          { label: 'Rejected', value: stats.rejected, color: 'bg-red-50 text-red-700' },
+          { label: 'Total', value: stats.total, color: 'bg-bauhaus-muted text-bauhaus-black' },
+          { label: 'Applied', value: stats.applied, color: 'bg-bauhaus-blue/10 text-bauhaus-blue' },
+          { label: 'Shortlisted', value: stats.shortlisted, color: 'bg-bauhaus-yellow/30 text-bauhaus-black' },
+          { label: 'Interview', value: stats.interview, color: 'bg-bauhaus-red/10 text-bauhaus-red' },
+          { label: 'Selected', value: stats.selected, color: 'bg-bauhaus-blue/20 text-bauhaus-blue' },
+          { label: 'Rejected', value: stats.rejected, color: 'bg-bauhaus-muted text-bauhaus-black/50' },
         ].map(s => (
-          <div key={s.label} className={`rounded-full px-4 py-1.5 text-center border bg-white ${s.color}`}>
-            <span className="text-lg font-bold">{s.value}</span>{' '}
-            <span className="text-xs font-medium">{s.label}</span>
+          <div key={s.label} className={`px-4 py-2 text-center border-2 border-bauhaus-black ${s.color}`}>
+            <span className="text-lg font-black">{s.value}</span>{' '}
+            <span className="text-xs font-bold uppercase">{s.label}</span>
           </div>
         ))}
       </div>
@@ -167,11 +148,11 @@ const ApplicantList = () => {
       <div className="flex flex-wrap gap-2">
         {TABS.map(tab => (
           <button key={tab} onClick={() => setFilter(tab)}
-            className={`px-4 py-2 text-sm font-medium capitalize transition-all border-b-2 rounded-none ${
+            className={`px-4 py-2 text-sm font-black capitalize transition-all border-b-4 ${
               filter === tab
-                ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-            }`}>
+                ? 'border-bauhaus-blue text-bauhaus-blue'
+                : 'border-transparent text-bauhaus-black/40 hover:text-bauhaus-black hover:border-bauhaus-black/20'
+            } uppercase`}>
             {tab === 'all' ? `All (${stats.total})` : `${tab} (${stats[tab]})`}
           </button>
         ))}
@@ -179,67 +160,60 @@ const ApplicantList = () => {
 
       {/* Applicant Cards */}
       {filtered.length === 0 ? (
-        <div className="text-center py-16 text-slate-400">
+        <div className="text-center py-16 text-bauhaus-black/40">
           <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
-          <p className="text-lg font-medium">{filter === 'all' ? 'No applications yet for this job' : `No ${filter} applications`}</p>
+          <p className="text-lg font-black uppercase">{filter === 'all' ? 'No applications yet' : `No ${filter} applications`}</p>
         </div>
       ) : (
         <div className="space-y-4">
-          {filtered.map((app, i) => (
-            <motion.div key={app._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-              className="bg-white rounded-2xl p-5 border border-slate-100 hover:shadow-sm transition">
+          {filtered.map((app) => (
+            <div key={app._id} className="bg-white border-4 border-bauhaus-black p-5 shadow-hard-sm hover:-translate-y-0.5 transition-all">
               {/* Student Info */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-start gap-3">
-                  {/* Student avatar — profile picture or initials fallback */} {/* NEW */}
-                  <div className="relative w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center shrink-0 text-sm overflow-hidden"> {/* NEW */}
-                    {app.student?.profilePicture?.url ? ( // NEW
-                      <img // NEW
-                        src={app.student.profilePicture.url} // NEW
-                        alt="" // NEW
-                        className="w-full h-full object-cover" // NEW
-                        onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex'; }} // NEW
-                      /> // NEW
-                    ) : null} // NEW
-                    <span className="absolute inset-0 flex items-center justify-center" style={{ display: app.student?.profilePicture?.url ? 'none' : 'flex' }}> {/* NEW */}
-                      {app.student?.user?.name?.charAt(0)?.toUpperCase() || '?'} // NEW
-                    </span> // NEW
-                  </div> {/* NEW */}
+                  <div className="relative w-10 h-10 bg-bauhaus-blue text-white font-black flex items-center justify-center shrink-0 text-sm overflow-hidden border-2 border-bauhaus-black">
+                    {app.student?.profilePicture?.url ? (
+                      <img src={app.student.profilePicture.url} alt="" className="w-full h-full object-cover"
+                        onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex'; }} />
+                    ) : null}
+                    <span className="absolute inset-0 flex items-center justify-center" style={{ display: app.student?.profilePicture?.url ? 'none' : 'flex' }}>
+                      {app.student?.user?.name?.charAt(0)?.toUpperCase() || '?'}
+                    </span>
+                  </div>
                   <div>
-                    <h3 className="font-semibold text-slate-800">{app.student?.user?.name || 'Student'}</h3>
-                    <p className="text-sm text-slate-500">{app.student?.user?.email}</p>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-slate-500">
+                    <h3 className="font-black text-bauhaus-black uppercase">{app.student?.user?.name || 'Student'}</h3>
+                    <p className="text-sm text-bauhaus-black/50 font-medium">{app.student?.user?.email}</p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-bauhaus-black/50 font-bold">
                       <span>{app.student?.branch || '—'} • {app.student?.passingYear || '—'}</span>
-                      <span>CGPA: <strong className="text-slate-700">{app.student?.cgpa ?? '—'}</strong></span>
-                      <span>Backlogs: <strong className="text-slate-700">{app.student?.activeBacklogs ?? 0}</strong></span>
+                      <span>CGPA: <strong className="text-bauhaus-black">{app.student?.cgpa ?? '—'}</strong></span>
+                      <span>Backlogs: <strong className="text-bauhaus-black">{app.student?.activeBacklogs ?? 0}</strong></span>
                       {app.student?.enrollmentNo && <span>Enr: {app.student.enrollmentNo}</span>}
                     </div>
                   </div>
                 </div>
-                <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${statusColors[app.status]}`}>{app.status}</span>
+                <span className={`shrink-0 px-2.5 py-0.5 text-xs font-black capitalize border-2 border-bauhaus-black uppercase ${statusColors[app.status]}`}>{app.status}</span>
               </div>
-
 
               {/* Skills */}
               {app.student?.skills?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-3">
                   {app.student.skills.map((s, j) => (
-                    <span key={j} className="px-2.5 py-0.5 rounded-lg bg-indigo-50 text-xs font-medium text-indigo-700 border border-indigo-100">{s}</span>
+                    <span key={j} className="px-2.5 py-0.5 bg-bauhaus-blue/10 text-xs font-bold text-bauhaus-blue border-2 border-bauhaus-blue">{s}</span>
                   ))}
                 </div>
               )}
 
-              {/* Meta + Actions */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
-                <span className="text-xs text-slate-400">Applied {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : '—'}</span>
+              {/* Actions */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t-2 border-bauhaus-muted">
+                <span className="text-xs text-bauhaus-black/30 font-bold">Applied {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : '—'}</span>
                 <div className="flex flex-wrap gap-2">
                   {app.student?.resumeUrl ? (
                     <a href={app.student.resumeUrl} target="_blank" rel="noreferrer"
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 text-xs text-slate-700 hover:bg-slate-200 font-medium">
-                      <FileText className="w-3 h-3" /> View Resume
+                      className="flex items-center gap-1 px-3 py-1.5 bg-bauhaus-muted text-xs text-bauhaus-black font-bold hover:bg-bauhaus-yellow/30 transition border-2 border-bauhaus-black/20 uppercase">
+                      <FileText className="w-3 h-3" /> Resume
                     </a>
                   ) : (
-                    <span className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-50 text-xs text-slate-400 cursor-not-allowed" title="No resume uploaded">
+                    <span className="flex items-center gap-1 px-3 py-1.5 bg-bauhaus-muted/50 text-xs text-bauhaus-black/30 cursor-not-allowed font-bold border-2 border-bauhaus-black/10 uppercase">
                       <FileText className="w-3 h-3" /> No Resume
                     </span>
                   )}
@@ -248,22 +222,22 @@ const ApplicantList = () => {
                     <>
                       {app.status === 'applied' && (
                         <button onClick={() => updateStatus(app._id, 'shortlisted')} disabled={updating === app._id}
-                          className="px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 text-xs font-medium hover:bg-amber-200 disabled:opacity-50">
+                          className="px-3 py-1.5 bg-bauhaus-yellow text-bauhaus-black text-xs font-black hover:opacity-80 disabled:opacity-50 border-2 border-bauhaus-black uppercase">
                           Shortlist
                         </button>
                       )}
                       {['applied', 'shortlisted'].includes(app.status) && (
                         <button onClick={() => setInterviewFor(interviewFor === app._id ? null : app._id)}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-100 text-purple-700 text-xs font-medium hover:bg-purple-200">
-                          <Calendar className="w-3 h-3" /> Schedule Interview
+                          className="flex items-center gap-1 px-3 py-1.5 bg-bauhaus-red/10 text-bauhaus-red text-xs font-black hover:bg-bauhaus-red hover:text-white border-2 border-bauhaus-red transition uppercase">
+                          <Calendar className="w-3 h-3" /> Interview
                         </button>
                       )}
                       <button onClick={() => updateStatus(app._id, 'selected')} disabled={updating === app._id}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200 disabled:opacity-50">
+                        className="flex items-center gap-1 px-3 py-1.5 bg-bauhaus-blue/10 text-bauhaus-blue text-xs font-black hover:bg-bauhaus-blue hover:text-white border-2 border-bauhaus-blue transition disabled:opacity-50 uppercase">
                         <CheckCircle className="w-3 h-3" /> Select
                       </button>
                       <button onClick={() => updateStatus(app._id, 'rejected')} disabled={updating === app._id}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-medium hover:bg-red-200 disabled:opacity-50">
+                        className="flex items-center gap-1 px-3 py-1.5 bg-bauhaus-red/10 text-bauhaus-red text-xs font-black hover:bg-bauhaus-red hover:text-white border-2 border-bauhaus-red transition disabled:opacity-50 uppercase">
                         <XCircle className="w-3 h-3" /> Reject
                       </button>
                     </>
@@ -273,68 +247,42 @@ const ApplicantList = () => {
 
               {/* Interview Scheduling Form */}
               {interviewFor === app._id && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-                  className="mt-4 p-4 rounded-xl bg-purple-50 border border-purple-100 space-y-3">
-                  <h4 className="text-sm font-semibold text-purple-800">Schedule Interview for {app.student?.user?.name}</h4>
+                <div className="mt-4 p-4 bg-bauhaus-yellow/10 border-2 border-bauhaus-yellow space-y-3">
+                  <h4 className="text-sm font-black text-bauhaus-black uppercase">Schedule Interview for {app.student?.user?.name}</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Round Name *</label>
-                      <input type="text" value={interviewForm.roundName} onChange={(e) => setInterviewForm({...interviewForm, roundName: e.target.value})} className={inputClass} placeholder="e.g. Technical Round 1" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Round Number</label>
-                      <input type="number" min="1" value={interviewForm.roundNumber} onChange={(e) => setInterviewForm({...interviewForm, roundNumber: parseInt(e.target.value) || 1})} className={inputClass} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Date & Time *</label>
-                      <input type="datetime-local" value={interviewForm.scheduledAt} onChange={(e) => setInterviewForm({...interviewForm, scheduledAt: e.target.value})} className={inputClass} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Mode</label>
-                      <select value={interviewForm.mode} onChange={(e) => setInterviewForm({...interviewForm, mode: e.target.value})} className={inputClass}>
-                        <option value="online">Online</option>
-                        <option value="offline">Offline</option>
-                      </select>
-                    </div>
+                    <div><label className="block text-xs font-black text-bauhaus-black/60 mb-1 uppercase tracking-wider">Round Name *</label><input type="text" value={interviewForm.roundName} onChange={(e) => setInterviewForm({...interviewForm, roundName: e.target.value})} className={inputClass} placeholder="e.g. Technical Round 1" /></div>
+                    <div><label className="block text-xs font-black text-bauhaus-black/60 mb-1 uppercase tracking-wider">Round Number</label><input type="number" min="1" value={interviewForm.roundNumber} onChange={(e) => setInterviewForm({...interviewForm, roundNumber: parseInt(e.target.value) || 1})} className={inputClass} /></div>
+                    <div><label className="block text-xs font-black text-bauhaus-black/60 mb-1 uppercase tracking-wider">Date & Time *</label><input type="datetime-local" value={interviewForm.scheduledAt} onChange={(e) => setInterviewForm({...interviewForm, scheduledAt: e.target.value})} className={inputClass} /></div>
+                    <div><label className="block text-xs font-black text-bauhaus-black/60 mb-1 uppercase tracking-wider">Mode</label><select value={interviewForm.mode} onChange={(e) => setInterviewForm({...interviewForm, mode: e.target.value})} className={inputClass}><option value="online">Online</option><option value="offline">Offline</option></select></div>
                     {interviewForm.mode === 'offline' ? (
-                      <div className="sm:col-span-2">
-                        <label className="block text-xs font-medium text-slate-600 mb-1">Venue</label>
-                        <input type="text" value={interviewForm.venue} onChange={(e) => setInterviewForm({...interviewForm, venue: e.target.value})} className={inputClass} placeholder="e.g. Room 101, Main Building" />
-                      </div>
+                      <div className="sm:col-span-2"><label className="block text-xs font-black text-bauhaus-black/60 mb-1 uppercase tracking-wider">Venue</label><input type="text" value={interviewForm.venue} onChange={(e) => setInterviewForm({...interviewForm, venue: e.target.value})} className={inputClass} placeholder="e.g. Room 101" /></div>
                     ) : (
-                      <div className="sm:col-span-2">
-                        <label className="block text-xs font-medium text-slate-600 mb-1">Meeting Link</label>
-                        <input type="url" value={interviewForm.meetingLink} onChange={(e) => setInterviewForm({...interviewForm, meetingLink: e.target.value})} className={inputClass} placeholder="https://meet.google.com/..." />
-                      </div>
+                      <div className="sm:col-span-2"><label className="block text-xs font-black text-bauhaus-black/60 mb-1 uppercase tracking-wider">Meeting Link</label><input type="url" value={interviewForm.meetingLink} onChange={(e) => setInterviewForm({...interviewForm, meetingLink: e.target.value})} className={inputClass} placeholder="https://meet.google.com/..." /></div>
                     )}
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => handleScheduleInterview(app._id)} disabled={scheduling}
-                      className="px-4 py-2 rounded-xl bg-purple-600 text-white text-sm font-medium hover:bg-purple-700 transition disabled:opacity-50">
-                      {scheduling ? 'Scheduling...' : 'Schedule'}
-                    </button>
-                    <button onClick={() => setInterviewFor(null)} className="px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50">
-                      Cancel
-                    </button>
+                      className="px-4 py-2 bg-bauhaus-blue text-white text-sm font-black border-2 border-bauhaus-black hover:opacity-90 transition disabled:opacity-50 uppercase">{scheduling ? 'Scheduling...' : 'Schedule'}</button>
+                    <button onClick={() => setInterviewFor(null)} className="px-4 py-2 border-2 border-bauhaus-black text-sm text-bauhaus-black font-bold hover:bg-bauhaus-muted transition uppercase">Cancel</button>
                   </div>
-                </motion.div>
+                </div>
               )}
-            </motion.div>
+            </div>
           ))}
         </div>
       )}
 
-      {/* Pagination Controls */}
+      {/* Pagination */}
       {pagination && (
-        <div className="flex items-center justify-between bg-white rounded-2xl p-4 border border-slate-100">
-          <p className="text-sm text-slate-500">
+        <div className="flex items-center justify-between bg-white border-4 border-bauhaus-black p-4">
+          <p className="text-sm text-bauhaus-black/50 font-bold">
             Showing {((pagination.page - 1) * pagination.limit) + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
           </p>
           <div className="flex gap-2">
             <button disabled={!pagination.hasPrevPage} onClick={() => setPage(p => p - 1)}
-              className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium disabled:opacity-40 hover:bg-slate-50 transition">Prev</button>
+              className="px-4 py-2 border-2 border-bauhaus-black text-sm font-black disabled:opacity-40 hover:bg-bauhaus-muted transition uppercase">Prev</button>
             <button disabled={!pagination.hasNextPage} onClick={() => setPage(p => p + 1)}
-              className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium disabled:opacity-40 hover:bg-slate-50 transition">Next</button>
+              className="px-4 py-2 border-2 border-bauhaus-black text-sm font-black disabled:opacity-40 hover:bg-bauhaus-muted transition uppercase">Next</button>
           </div>
         </div>
       )}

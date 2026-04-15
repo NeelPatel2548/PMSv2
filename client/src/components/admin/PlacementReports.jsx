@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { BarChart3, PlusCircle, FileText } from 'lucide-react';
+import { PlusCircle, FileText } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../../services/api';
 import Loader from '../common/Loader';
@@ -41,22 +40,22 @@ const PlacementReports = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold text-slate-800 mb-1">Placement Reports</h1>
-        <p className="text-slate-500 text-sm">Generate and view placement reports by academic year</p>
-      </motion.div>
+      <div>
+        <h1 className="text-2xl font-black text-bauhaus-black mb-1 uppercase tracking-wider">Placement Reports</h1>
+        <p className="text-bauhaus-black/50 text-sm font-medium">Generate and view placement reports by academic year</p>
+      </div>
 
       {/* Generate */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-800 mb-4">Generate New Report</h2>
+      <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
+        <h2 className="text-lg font-black text-bauhaus-black mb-4 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2">Generate New Report</h2>
         {message.text && (
-          <div className={`mb-3 p-2 rounded-xl text-sm ${message.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>{message.text}</div>
+          <div className={`mb-3 p-2 text-sm font-bold border-2 border-bauhaus-black ${message.type === 'success' ? 'bg-bauhaus-yellow text-bauhaus-black' : 'bg-bauhaus-red text-white'}`}>{message.text}</div>
         )}
         <div className="flex gap-3">
           <input type="text" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)}
-            placeholder="e.g. 2024-25" className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none" />
+            placeholder="e.g. 2024-25" className="bauhaus-input flex-1" />
           <button onClick={generateReport} disabled={generating}
-            className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2 disabled:opacity-60 shadow-sm">
+            className="px-4 py-2 bg-bauhaus-blue text-white text-sm font-black border-2 border-bauhaus-black hover:opacity-90 transition flex items-center gap-2 disabled:opacity-60 uppercase">
             <PlusCircle className="w-4 h-4" />{generating ? 'Generating...' : 'Generate'}
           </button>
         </div>
@@ -64,54 +63,48 @@ const PlacementReports = () => {
 
       {/* Reports */}
       {reports.length === 0 ? (
-        <div className="text-center py-16 text-slate-400">
+        <div className="text-center py-16 text-bauhaus-black/40">
           <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
-          <p>No reports generated yet</p>
+          <p className="font-bold uppercase">No reports generated yet</p>
         </div>
       ) : (
         <div className="space-y-6">
-          {reports.map((report, i) => (
-            <motion.div key={report._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-              className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm border-l-4 border-l-indigo-500">
+          {reports.map((report) => (
+            <div key={report._id} className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm border-l-8 border-l-bauhaus-blue">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-800">Academic Year: {report.academicYear}</h3>
-                  <p className="text-xs text-slate-400">Generated: {new Date(report.createdAt).toLocaleString()}</p>
+                  <h3 className="text-lg font-black text-bauhaus-black uppercase">Academic Year: {report.academicYear}</h3>
+                  <p className="text-xs text-bauhaus-black/30 font-bold">Generated: {new Date(report.createdAt).toLocaleString()}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                <div className="p-3 rounded-xl bg-blue-50">
-                  <p className="text-xl font-bold text-blue-700">{report.totalStudents}</p>
-                  <p className="text-xs text-blue-500">Total Students</p>
-                </div>
-                <div className="p-3 rounded-xl bg-green-50">
-                  <p className="text-xl font-bold text-green-700">{report.totalPlaced}</p>
-                  <p className="text-xs text-green-500">Placed</p>
-                </div>
-                <div className="p-3 rounded-xl bg-amber-50">
-                  <p className="text-xl font-bold text-amber-700">{report.avgPackage?.toFixed(1) || 0} LPA</p>
-                  <p className="text-xs text-amber-500">Avg Package</p>
-                </div>
-                <div className="p-3 rounded-xl bg-purple-50">
-                  <p className="text-xl font-bold text-purple-700">{report.maxPackage || 0} LPA</p>
-                  <p className="text-xs text-purple-500">Max Package</p>
-                </div>
+                {[
+                  { label: 'Total Students', value: report.totalStudents, color: 'bg-bauhaus-blue text-white' },
+                  { label: 'Placed', value: report.totalPlaced, color: 'bg-bauhaus-yellow text-bauhaus-black' },
+                  { label: 'Avg Package', value: `${report.avgPackage?.toFixed(1) || 0} LPA`, color: 'bg-bauhaus-red text-white' },
+                  { label: 'Max Package', value: `${report.maxPackage || 0} LPA`, color: 'bg-bauhaus-black text-white' },
+                ].map(s => (
+                  <div key={s.label} className={`p-3 border-2 border-bauhaus-black ${s.color}`}>
+                    <p className="text-xl font-black">{s.value}</p>
+                    <p className="text-xs font-bold uppercase tracking-wider opacity-70">{s.label}</p>
+                  </div>
+                ))}
               </div>
 
               {report.branchWiseStats?.length > 0 && (
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={report.branchWiseStats.filter(b => b.total > 0)}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="branch" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '12px' }} />
-                    <Bar dataKey="total" fill="#e2e8f0" name="Total" radius={[3, 3, 0, 0]} />
-                    <Bar dataKey="placed" fill="#6366f1" name="Placed" radius={[3, 3, 0, 0]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" />
+                    <XAxis dataKey="branch" tick={{ fontSize: 11, fontWeight: 700 }} />
+                    <YAxis tick={{ fontSize: 11, fontWeight: 700 }} />
+                    <Tooltip contentStyle={{ border: '2px solid #1A1A1A', borderRadius: '0', boxShadow: '3px 3px 0 #1A1A1A', fontSize: '12px', fontWeight: 700 }} />
+                    <Bar dataKey="total" fill="#E5E5E5" name="Total" radius={0} />
+                    <Bar dataKey="placed" fill="#1A1A1A" name="Placed" radius={0} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
-            </motion.div>
+            </div>
           ))}
         </div>
       )}

@@ -1,184 +1,100 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Briefcase, Users, CheckCircle, XCircle, TrendingUp, Eye, Edit2, Play, Square } from 'lucide-react';
+import { Briefcase, Users, PlusCircle, TrendingUp, Building2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import Loader from '../common/Loader';
 
 const CompanyDashboard = () => {
-  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const fetchDashboard = async () => {
-    try {
-      const res = await api.get('/company/dashboard');
-      if (res.data.success) {
-        setData(res.data.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch dashboard', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const res = await api.get('/company/dashboard');
+        if (res.data.success) setData(res.data.data);
+      } catch { /* ignore */ } finally { setLoading(false); }
+    };
     fetchDashboard();
   }, []);
 
-  const handleToggleJobStatus = async (jobId, currentStatus) => {
-    const action = currentStatus === 'open' ? 'close' : 'reopen';
-    if (action === 'close') {
-      if (!window.confirm('Closing this job will AUTOMATICALLY REJECT all applications currently in pending/shortlisted state. Are you absolutely sure?')) {
-        return;
-      }
-    }
-    try {
-      const res = await api.patch(`/company/jobs/${jobId}/status`);
-      if (res.data.success) {
-        fetchDashboard(); // refresh to get updated counts and status
-      }
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to toggle status');
-    }
-  };
-
   if (loading) return <Loader />;
-  if (!data) return <p className="text-center text-slate-500 mt-10">Failed to load dashboard.</p>;
+  if (!data) return <p className="text-center text-bauhaus-black/50 mt-10 font-bold uppercase tracking-wider">Failed to load dashboard.</p>;
 
   const { company, stats, recentJobs } = data;
 
   const statCards = [
-    { label: 'Total Jobs', value: stats.totalJobs, icon: Briefcase, color: 'from-indigo-500 to-indigo-600' },
-    { label: 'Active Jobs', value: stats.openJobs, icon: TrendingUp, color: 'from-emerald-500 to-green-500' },
-    { label: 'Total Applicants', value: stats.totalApplications, icon: Users, color: 'from-purple-500 to-violet-500' },
-    { label: 'Selected Candidates', value: stats.selected, icon: CheckCircle, color: 'from-amber-500 to-orange-500' },
+    { label: 'Active Jobs', value: stats?.activeJobs || 0, icon: Briefcase, color: 'bg-bauhaus-blue' },
+    { label: 'Total Applicants', value: stats?.totalApplicants || 0, icon: Users, color: 'bg-bauhaus-red' },
+    { label: 'Selected', value: stats?.selected || 0, icon: TrendingUp, color: 'bg-bauhaus-yellow' },
+    { label: 'Pending', value: stats?.pending || 0, icon: Building2, color: 'bg-bauhaus-black' },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="max-w-6xl mx-auto space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Welcome, {company.name}</h1>
-          <p className="text-slate-500 mt-1">Company Dashboard & ATS Overview</p>
+          <h1 className="text-2xl font-black text-bauhaus-black uppercase tracking-wider">Welcome, {company?.name} 🏢</h1>
+          <p className="text-bauhaus-black/50 mt-1 font-medium">
+            {company?.isApproved ? 'Manage your recruitment drives' : '⏳ Your company is pending approval'}
+          </p>
         </div>
-        <Link
-          to="/company/post-job"
-          className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all text-sm w-full sm:w-auto text-center"
-        >
-          Post New Job
-        </Link>
-      </motion.div>
-
-      {!company.isApproved && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-amber-800 flex items-start gap-4">
-          <XCircle className="w-6 h-6 shrink-0 mt-0.5" />
-          <div>
-            <h3 className="font-semibold text-lg">Account Pending Approval</h3>
-            <p className="mt-1 text-amber-700">Your company profile is under review by the administration. You will not be able to post jobs or view students until your account is approved.</p>
-          </div>
-        </motion.div>
-      )}
+        <button onClick={() => navigate('/company/post-job')}
+          className="px-6 py-3 bg-bauhaus-red text-white font-black border-2 border-bauhaus-black shadow-hard-sm hover:opacity-90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all text-sm flex items-center gap-2 uppercase tracking-wider">
+          <PlusCircle className="w-4 h-4" /> Post New Job
+        </button>
+      </div>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {statCards.map((card, i) => (
-          <motion.div key={card.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-3`}>
-              <card.icon className="w-5 h-5 text-white" />
+        {statCards.map((card) => (
+          <div key={card.label} className="bg-white border-4 border-bauhaus-black p-5 shadow-hard-sm hover:-translate-y-0.5 transition-transform">
+            <div className={`w-10 h-10 ${card.color} flex items-center justify-center mb-3 border-2 border-bauhaus-black ${card.color === 'bg-bauhaus-yellow' ? 'text-bauhaus-black' : 'text-white'}`}>
+              <card.icon className="w-5 h-5" />
             </div>
-            <p className="text-2xl font-bold text-slate-800">{card.value}</p>
-            <p className="text-sm text-slate-500">{card.label}</p>
-          </motion.div>
+            <p className="text-2xl font-black text-bauhaus-black">{card.value}</p>
+            <p className="text-xs font-bold text-bauhaus-black/50 uppercase tracking-wider">{card.label}</p>
+          </div>
         ))}
       </div>
 
-      {/* My Posted Jobs Table */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-800">My Posted Jobs</h2>
+      {/* Recent Jobs */}
+      <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-md">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-black text-bauhaus-black uppercase tracking-wider">Recent Jobs</h2>
+          <Link to="/company/jobs" className="text-sm text-bauhaus-blue hover:text-bauhaus-red font-black uppercase tracking-wider">View All →</Link>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-sm">
-                <th className="px-6 py-4 font-medium">Job Title</th>
-                <th className="px-6 py-4 font-medium cursor-help" title="Applicants fetched from aggregate not realtime here unless refreshed">Package / Type</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium">Deadline</th>
-                <th className="px-6 py-4 flex justify-end font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {recentJobs.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
-                    No jobs posted yet.
-                  </td>
-                </tr>
-              ) : (
-                recentJobs.map((job) => (
-                  <tr key={job._id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="font-medium text-slate-800">{job.title}</p>
-                      <p className="text-xs text-slate-500 line-clamp-1 max-w-xs">{job.description}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-slate-700">{job.package || '—'}</p>
-                      <p className="text-xs text-slate-500 capitalize">{job.jobType}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      {job.status === 'open' ? (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                          Active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">
-                          Closed
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-slate-700">
-                        {job.deadline ? new Date(job.deadline).toLocaleDateString() : 'No deadline'}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => navigate(`/company/jobs/${job._id}/applicants`)}
-                          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                          title="View Applicants"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => navigate(`/company/jobs/${job._id}/edit`)}
-                          className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
-                          title="Edit Job"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleToggleJobStatus(job._id, job.status)}
-                          className={`p-2 rounded-lg transition title ${job.status === 'open' ? 'text-red-500 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
-                          title={job.status === 'open' ? "Close Job (Rejects Pending)" : "Reopen Job"}
-                        >
-                          {job.status === 'open' ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </motion.div>
+        {recentJobs?.length === 0 ? (
+          <p className="text-center text-bauhaus-black/40 py-6 font-bold uppercase">No jobs posted yet</p>
+        ) : (
+          <div className="space-y-3">
+            {recentJobs?.map(job => (
+              <div key={job._id} className="flex items-center justify-between p-4 border-2 border-bauhaus-black hover:shadow-hard-sm transition-all bg-bauhaus-white">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-bauhaus-black uppercase">{job.title}</h3>
+                  <div className="flex flex-wrap gap-3 mt-1 text-xs text-bauhaus-black/50 font-medium">
+                    <span className="capitalize">{job.jobType}</span>
+                    {job.package && <span>📦 {job.package}</span>}
+                    <span>🎯 {job.openings} opening{job.openings > 1 ? 's' : ''}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                  <span className={`px-2.5 py-0.5 text-xs font-black uppercase border-2 border-bauhaus-black ${
+                    job.status === 'open' ? 'bg-bauhaus-blue text-white' : 'bg-bauhaus-red text-white'
+                  }`}>
+                    {job.status === 'open' ? 'Active' : 'Closed'}
+                  </span>
+                  <Link to={`/company/jobs/${job._id}/applicants`}
+                    className="px-3 py-1.5 text-xs font-black text-bauhaus-blue border-2 border-bauhaus-blue hover:bg-bauhaus-blue hover:text-white transition-colors uppercase">
+                    Applicants
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

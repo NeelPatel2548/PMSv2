@@ -16,7 +16,7 @@ const SkillsSelector = ({ selected = [], onChange, maxSkills = 10, readOnly = fa
 
   return (
     <div>
-      <p className="text-sm text-slate-500 mb-3">
+      <p className="text-sm text-bauhaus-black/60 mb-3 font-bold uppercase tracking-wider">
         {readOnly ? `${selected.length} skill${selected.length !== 1 ? 's' : ''} selected` : `Select your skills (${selected.length}/${maxSkills})`}
       </p>
       <div className="flex flex-wrap gap-2">
@@ -31,12 +31,12 @@ const SkillsSelector = ({ selected = [], onChange, maxSkills = 10, readOnly = fa
               disabled={readOnly || disabled}
               title={disabled ? `Maximum ${maxSkills} skills selected` : ''}
               className={`
-                inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all
+                inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold transition-all border-2
                 ${isSelected
-                  ? 'bg-primary-100 text-primary-700 border border-primary-200'
+                  ? 'bg-bauhaus-blue text-white border-bauhaus-black shadow-hard-sm'
                   : disabled
-                    ? 'bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed'
-                    : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+                    ? 'bg-bauhaus-muted text-bauhaus-black/30 border-bauhaus-muted cursor-not-allowed'
+                    : 'bg-white text-bauhaus-black border-bauhaus-black hover:bg-bauhaus-yellow/20'
                 }
                 ${readOnly ? 'cursor-default' : ''}
               `}

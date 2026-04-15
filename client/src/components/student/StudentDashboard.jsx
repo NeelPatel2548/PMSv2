@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Briefcase, FileCheck, Clock, Award, XCircle, TrendingUp, ArrowRight, CheckCircle, AlertTriangle, User, BookOpen, Wrench, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { RadialBarChart, RadialBar, ResponsiveContainer } from 'recharts';
@@ -7,9 +6,9 @@ import api from '../../services/api';
 import Loader from '../common/Loader';
 
 const getColor = (score) => {
-  if (score <= 40) return '#E24B4A';
-  if (score <= 70) return '#EF9F27';
-  if (score <= 99) return '#6366F1';
+  if (score <= 40) return '#D02020';
+  if (score <= 70) return '#F0C020';
+  if (score <= 99) return '#1040C0';
   return '#1D9E75';
 };
 
@@ -40,7 +39,7 @@ const StudentDashboard = () => {
   }, []);
 
   if (loading) return <Loader />;
-  if (!data) return <p className="text-center text-slate-500 mt-10">Failed to load dashboard.</p>;
+  if (!data) return <p className="text-center text-bauhaus-black/50 mt-10 font-bold uppercase tracking-wider">Failed to load dashboard.</p>;
 
   const { student, stats, upcomingInterviews, offers, completionScore = 0, completionBreakdown = {} } = data;
 
@@ -56,62 +55,59 @@ const StudentDashboard = () => {
   ];
 
   const statCards = [
-    { label: 'Total Applied', value: stats.totalApplications, icon: Briefcase, color: 'from-indigo-500 to-indigo-600', shadow: 'shadow-indigo-100' },
-    { label: 'Shortlisted', value: stats.shortlisted, icon: FileCheck, color: 'from-amber-500 to-orange-500', shadow: 'shadow-amber-100' },
-    { label: 'Interviews', value: stats.interviews, icon: Clock, color: 'from-purple-500 to-violet-500', shadow: 'shadow-purple-100' },
-    { label: 'Selected', value: stats.selected, icon: Award, color: 'from-emerald-500 to-green-500', shadow: 'shadow-emerald-100' },
-    { label: 'Rejected', value: stats.rejected, icon: XCircle, color: 'from-red-400 to-red-500', shadow: 'shadow-red-100' },
+    { label: 'Total Applied', value: stats.totalApplications, icon: Briefcase, color: 'bg-bauhaus-blue' },
+    { label: 'Shortlisted', value: stats.shortlisted, icon: FileCheck, color: 'bg-bauhaus-yellow' },
+    { label: 'Interviews', value: stats.interviews, icon: Clock, color: 'bg-bauhaus-red' },
+    { label: 'Selected', value: stats.selected, icon: Award, color: 'bg-bauhaus-black' },
+    { label: 'Rejected', value: stats.rejected, icon: XCircle, color: 'bg-bauhaus-muted' },
   ];
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold text-slate-800">Welcome, {student?.user?.name} 👋</h1>
-        <p className="text-slate-500 mt-1">
+      <div>
+        <h1 className="text-2xl font-black text-bauhaus-black uppercase tracking-wider">Welcome, {student?.user?.name} 👋</h1>
+        <p className="text-bauhaus-black/50 mt-1 font-medium">
           {student?.placementStatus === 'placed'
             ? '🎉 Congratulations! You have been placed!'
             : 'Track your placement journey here.'}
         </p>
-      </motion.div>
+      </div>
 
-      {/* Profile Completion Banner — only show if incomplete */}
+      {/* Profile Completion Banner */}
       {completionScore < 100 && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-200">
+        <div className="bg-bauhaus-yellow border-4 border-bauhaus-black p-5 shadow-hard-sm">
           <div className="flex items-start gap-3 mb-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <AlertTriangle className="w-5 h-5 text-bauhaus-black mt-0.5 flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-amber-800">Complete your profile to apply for jobs</h3>
-              <p className="text-sm text-amber-600 mt-0.5">You must complete all requirements below before applying to placement drives.</p>
+              <h3 className="font-black text-bauhaus-black uppercase">Complete your profile to apply for jobs</h3>
+              <p className="text-sm text-bauhaus-black/60 mt-0.5 font-medium">You must complete all requirements below before applying to placement drives.</p>
             </div>
           </div>
           <Link to="/student/profile"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition">
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-bauhaus-black text-white text-sm font-bold uppercase tracking-wider hover:opacity-90 transition border-2 border-bauhaus-black">
             Complete Profile <ArrowRight className="w-4 h-4" />
           </Link>
-        </motion.div>
+        </div>
       )}
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statCards.map((card, i) => (
-          <motion.div key={card.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className={`bg-white rounded-2xl p-5 border border-slate-100 shadow-sm ${card.shadow} hover:shadow-md transition-shadow`}>
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-3`}>
-              <card.icon className="w-5 h-5 text-white" />
+          <div key={card.label} className="bg-white border-4 border-bauhaus-black p-5 shadow-hard-sm hover:-translate-y-0.5 transition-transform">
+            <div className={`w-10 h-10 ${card.color} flex items-center justify-center mb-3 border-2 border-bauhaus-black ${card.color === 'bg-bauhaus-yellow' || card.color === 'bg-bauhaus-muted' ? 'text-bauhaus-black' : 'text-white'}`}>
+              <card.icon className="w-5 h-5" />
             </div>
-            <p className="text-2xl font-bold text-slate-800">{card.value}</p>
-            <p className="text-sm text-slate-500">{card.label}</p>
-          </motion.div>
+            <p className="text-2xl font-black text-bauhaus-black">{card.value}</p>
+            <p className="text-xs font-bold text-bauhaus-black/50 uppercase tracking-wider">{card.label}</p>
+          </div>
         ))}
       </div>
 
-      {/* ═══════════════ Profile Completion Chart ═══════════════ */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-        className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-800 mb-5">Profile Completion</h2>
+      {/* Profile Completion Chart */}
+      <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-md">
+        <h2 className="text-lg font-black text-bauhaus-black mb-5 uppercase tracking-wider">Profile Completion</h2>
         <div className="flex flex-col md:flex-row items-center gap-8">
           {/* Donut Chart */}
           <div className="relative flex-shrink-0" style={{ width: 180, height: 180 }}>
@@ -126,16 +122,15 @@ const StudentDashboard = () => {
               >
                 <RadialBar
                   dataKey="value"
-                  cornerRadius={8}
-                  background={{ fill: '#f1f5f9' }}
+                  cornerRadius={0}
+                  background={{ fill: '#E0E0E0' }}
                   isAnimationActive={true}
                 />
               </RadialBarChart>
             </ResponsiveContainer>
-            {/* Center text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-bold" style={{ color: chartColor }}>{completionScore}%</span>
-              <span className="text-xs text-slate-400 mt-0.5">{getStatus(completionScore)}</span>
+              <span className="text-3xl font-black" style={{ color: chartColor }}>{completionScore}%</span>
+              <span className="text-xs text-bauhaus-black/40 mt-0.5 font-bold uppercase">{getStatus(completionScore)}</span>
             </div>
           </div>
 
@@ -147,23 +142,22 @@ const StudentDashboard = () => {
                 <div key={section.label} className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
                     {isFull
-                      ? <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      : <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />}
-                    <section.icon className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                    <span className={`text-sm font-medium ${isFull ? 'text-slate-700' : 'text-slate-500'}`}>{section.label}</span>
+                      ? <CheckCircle className="w-4 h-4 text-bauhaus-blue flex-shrink-0" />
+                      : <XCircle className="w-4 h-4 text-bauhaus-red flex-shrink-0" />}
+                    <section.icon className="w-4 h-4 text-bauhaus-black/40 flex-shrink-0" />
+                    <span className={`text-sm font-bold ${isFull ? 'text-bauhaus-black' : 'text-bauhaus-black/50'}`}>{section.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    {/* Mini progress bar */}
-                    <div className="w-24 h-1.5 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
+                    <div className="w-24 h-2 bg-bauhaus-muted overflow-hidden hidden sm:block border border-bauhaus-black">
                       <div
-                        className="h-full rounded-full transition-all duration-500"
+                        className="h-full transition-all duration-500"
                         style={{
                           width: `${section.max > 0 ? (section.score / section.max) * 100 : 0}%`,
-                          backgroundColor: isFull ? '#1D9E75' : section.score > 0 ? '#6366F1' : '#E24B4A'
+                          backgroundColor: isFull ? '#1040C0' : section.score > 0 ? '#F0C020' : '#D02020'
                         }}
                       />
                     </div>
-                    <span className={`text-xs font-semibold tabular-nums min-w-[52px] text-right ${isFull ? 'text-green-600' : 'text-slate-400'}`}>
+                    <span className={`text-xs font-black tabular-nums min-w-[52px] text-right ${isFull ? 'text-bauhaus-blue' : 'text-bauhaus-black/40'}`}>
                       {section.score ?? 0} / {section.max ?? 0}
                     </span>
                   </div>
@@ -173,123 +167,118 @@ const StudentDashboard = () => {
           </div>
         </div>
 
-        {/* Tip message */}
         {completionScore < 100 && (
-          <div className="mt-5 flex items-center gap-2 p-3 rounded-xl bg-slate-50 border border-slate-100 text-sm text-slate-500">
-            <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+          <div className="mt-5 flex items-center gap-2 p-3 bg-bauhaus-muted border-2 border-bauhaus-black text-sm text-bauhaus-black/60 font-medium">
+            <AlertTriangle className="w-4 h-4 text-bauhaus-yellow flex-shrink-0" />
             Complete your profile to unlock job applications.
-            <Link to="/student/profile" className="text-indigo-600 font-medium ml-auto hover:text-indigo-700 flex items-center gap-1">
+            <Link to="/student/profile" className="text-bauhaus-blue font-black ml-auto hover:text-bauhaus-red flex items-center gap-1 uppercase text-xs tracking-wider">
               Go to Profile <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
         )}
-      </motion.div>
+      </div>
 
-      {/* Active Jobs For You */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-        className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+      {/* Active Jobs */}
+      <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-md">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-800">Active Jobs For You</h2>
-          <Link to="/student/jobs" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
+          <h2 className="text-lg font-black text-bauhaus-black uppercase tracking-wider">Active Jobs For You</h2>
+          <Link to="/student/jobs" className="text-sm text-bauhaus-blue hover:text-bauhaus-red font-black flex items-center gap-1 uppercase tracking-wider">
             View All <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
         {eligibleJobs.length === 0 ? (
           <div className="text-center py-8">
-            <TrendingUp className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+            <TrendingUp className="w-10 h-10 mx-auto mb-2 text-bauhaus-muted" />
             {completionScore < 100 ? (
               <>
-                <p className="text-slate-400">Complete your profile to see matching jobs</p>
-                <Link to="/student/profile" className="text-indigo-600 text-sm font-medium mt-1 inline-block">Go to Profile →</Link>
+                <p className="text-bauhaus-black/40 font-bold">Complete your profile to see matching jobs</p>
+                <Link to="/student/profile" className="text-bauhaus-blue text-sm font-black mt-1 inline-block uppercase">Go to Profile →</Link>
               </>
             ) : (
-              <p className="text-slate-400">No eligible jobs available right now. Check back later.</p>
+              <p className="text-bauhaus-black/40 font-bold">No eligible jobs available right now. Check back later.</p>
             )}
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {eligibleJobs.map(job => (
-              <div key={job._id} className="p-4 rounded-xl bg-slate-50 border border-slate-100 hover:shadow-sm hover:border-indigo-100 transition-all">
+              <div key={job._id} className="p-4 bg-bauhaus-white border-2 border-bauhaus-black hover:shadow-hard-sm transition-all">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-xs text-indigo-600 font-semibold">{job.company?.name}</p>
-                  {job.matchLevel === 'strong' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">🎯 Match</span>}
+                  <p className="text-xs text-bauhaus-blue font-black uppercase">{job.company?.name}</p>
+                  {job.matchLevel === 'strong' && <span className="text-[10px] px-1.5 py-0.5 bg-bauhaus-yellow text-bauhaus-black font-black border border-bauhaus-black">🎯 Match</span>}
                 </div>
-                <p className="font-medium text-slate-800 truncate">{job.title}</p>
-                <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+                <p className="font-bold text-bauhaus-black truncate">{job.title}</p>
+                <div className="flex items-center gap-3 mt-2 text-xs text-bauhaus-black/50 font-medium">
                   {job.package && <span>📦 {job.package}</span>}
                   <span className="capitalize">{job.jobType}</span>
                 </div>
                 {job.deadline && (
-                  <p className="text-xs text-slate-400 mt-1">Deadline: {new Date(job.deadline).toLocaleDateString()}</p>
+                  <p className="text-xs text-bauhaus-black/40 mt-1 font-medium">Deadline: {new Date(job.deadline).toLocaleDateString()}</p>
                 )}
               </div>
             ))}
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Upcoming Interviews */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-        className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+      <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-md">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-800">Upcoming Interviews</h2>
-          <Link to="/student/interviews" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">View All</Link>
+          <h2 className="text-lg font-black text-bauhaus-black uppercase tracking-wider">Upcoming Interviews</h2>
+          <Link to="/student/interviews" className="text-sm text-bauhaus-blue hover:text-bauhaus-red font-black uppercase tracking-wider">View All</Link>
         </div>
         {upcomingInterviews?.length === 0 ? (
-          <p className="text-center text-slate-400 py-6">No upcoming interviews.</p>
+          <p className="text-center text-bauhaus-black/40 py-6 font-bold">No upcoming interviews.</p>
         ) : (
           <div className="space-y-3">
             {upcomingInterviews?.map(int => {
               const d = new Date(int.scheduledAt);
               return (
-                <div key={int._id} className="flex items-center gap-4 p-3 rounded-xl bg-slate-50 hover:bg-slate-100/80 transition-colors">
-                  {/* Date block */}
-                  <div className="bg-indigo-600 rounded-xl min-w-[56px] h-[56px] flex flex-col items-center justify-center text-white flex-shrink-0 shadow-sm shadow-indigo-200">
-                    <span className="text-[10px] uppercase font-semibold opacity-80">{months[d.getMonth()]}</span>
-                    <span className="text-xl font-bold leading-tight">{d.getDate()}</span>
+                <div key={int._id} className="flex items-center gap-4 p-3 bg-bauhaus-white border-2 border-bauhaus-black hover:shadow-hard-sm transition-all">
+                  <div className="bg-bauhaus-black min-w-[56px] h-[56px] flex flex-col items-center justify-center text-white flex-shrink-0 border-2 border-bauhaus-black">
+                    <span className="text-[10px] uppercase font-black opacity-80">{months[d.getMonth()]}</span>
+                    <span className="text-xl font-black leading-tight">{d.getDate()}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-700 truncate">{int.job?.title}</p>
-                    <p className="text-xs text-slate-400 truncate">{int.company?.name} • {int.roundName}</p>
+                    <p className="font-bold text-bauhaus-black truncate">{int.job?.title}</p>
+                    <p className="text-xs text-bauhaus-black/50 truncate font-medium">{int.company?.name} • {int.roundName}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-semibold text-indigo-600">{d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    <p className="text-sm font-black text-bauhaus-blue">{d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Offers */}
       {offers?.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-          className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-2xl p-6 border border-green-100">
+        <div className="bg-bauhaus-yellow border-4 border-bauhaus-black p-6 shadow-hard-md">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-green-800">🎉 Your Offers</h2>
-            <Link to="/student/applications" className="text-sm text-green-700 hover:text-green-800 font-medium">
+            <h2 className="text-lg font-black text-bauhaus-black uppercase tracking-wider">🎉 Your Offers</h2>
+            <Link to="/student/applications" className="text-sm text-bauhaus-black/70 hover:text-bauhaus-black font-black uppercase tracking-wider">
               Manage Offers →
             </Link>
           </div>
           <div className="space-y-2">
             {offers.map(offer => {
               const offerBadge = {
-                pending: { bg: 'bg-amber-100 text-amber-700', label: '⏳ Pending Response' },
-                accepted: { bg: 'bg-emerald-100 text-emerald-800', label: '✅ Accepted' },
-                declined: { bg: 'bg-red-100 text-red-700', label: '❌ Declined' },
+                pending: { bg: 'bg-white text-bauhaus-black border-2 border-bauhaus-black', label: '⏳ Pending Response' },
+                accepted: { bg: 'bg-bauhaus-blue text-white border-2 border-bauhaus-black', label: '✅ Accepted' },
+                declined: { bg: 'bg-bauhaus-red text-white border-2 border-bauhaus-black', label: '❌ Declined' },
               };
               const badge = offerBadge[offer.offerStatus] || offerBadge.pending;
               return (
-                <div key={offer._id} className={`p-4 rounded-xl border ${
-                  offer.offerStatus === 'accepted' ? 'bg-emerald-100/60 border-emerald-200' : 'bg-white/60 border-green-100'
+                <div key={offer._id} className={`p-4 border-2 border-bauhaus-black ${
+                  offer.offerStatus === 'accepted' ? 'bg-white' : 'bg-white/60'
                 }`}>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-green-800">{offer.job?.title || 'Offer'}</p>
-                      {offer.offeredPackage && <p className="text-sm text-green-600 mt-0.5">📦 Package: {offer.offeredPackage}</p>}
+                      <p className="font-black text-bauhaus-black uppercase">{offer.job?.title || 'Offer'}</p>
+                      {offer.offeredPackage && <p className="text-sm text-bauhaus-black/60 mt-0.5 font-medium">📦 Package: {offer.offeredPackage}</p>}
                     </div>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${badge.bg}`}>
+                    <span className={`px-2.5 py-1 text-xs font-black ${badge.bg}`}>
                       {badge.label}
                     </span>
                   </div>
@@ -297,7 +286,7 @@ const StudentDashboard = () => {
               );
             })}
           </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );
