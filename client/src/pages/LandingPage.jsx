@@ -58,7 +58,7 @@ const LandingPage = () => {
             {/* Center text */}
             <div className="relative z-10 text-center">
               <p className="text-8xl font-black text-white/20 uppercase">PMS</p>
-              <p className="text-sm font-bold text-white/50 uppercase tracking-[0.5em] mt-2">v2.0</p>
+              <p className="text-sm font-bold text-white/50 uppercase tracking-[0.5em] mt-2">From Campus to Corporate</p>
             </div>
           </div>
         </div>

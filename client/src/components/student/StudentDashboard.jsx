@@ -13,10 +13,10 @@ const getColor = (score) => {
 };
 
 const getStatus = (score) => {
-  if (score <= 40) return 'Just started';
-  if (score <= 70) return 'Almost there';
-  if (score <= 99) return 'Looking good!';
-  return 'Profile Complete! 🎉';
+  if (score <= 40) return '';
+  if (score <= 70) return '';
+  if (score <= 99) return '';
+  return '';
 };
 
 const StudentDashboard = () => {
