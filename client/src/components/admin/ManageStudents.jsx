@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, Trash2, UserX, UserCheck, Eye, X, AlertCircle, GraduationCap, Download } from 'lucide-react';
-import api from '../../services/api';
+import api, { getPdfProxyUrl } from '../../services/api';
 import Loader from '../common/Loader';
 
 const ManageStudents = () => {
@@ -366,7 +366,7 @@ const ManageStudents = () => {
                 <div className="flex flex-wrap gap-4">
                   {viewStudent.linkedin && <a href={viewStudent.linkedin} target="_blank" rel="noreferrer" className="text-sm text-bauhaus-blue hover:underline font-bold uppercase">LinkedIn</a>}
                   {viewStudent.github && <a href={viewStudent.github} target="_blank" rel="noreferrer" className="text-sm text-bauhaus-blue hover:underline font-bold uppercase">GitHub</a>}
-                  {viewStudent.resumeUrl && <a href={viewStudent.resumeUrl} target="_blank" rel="noreferrer" className="text-sm text-bauhaus-red hover:underline font-black uppercase">View Resume PDF</a>}
+                  {viewStudent.resumeUrl && <a href={getPdfProxyUrl(viewStudent.resumeUrl)} target="_blank" rel="noreferrer" className="text-sm text-bauhaus-red hover:underline font-black uppercase">View Resume PDF</a>}
                   {!viewStudent.linkedin && !viewStudent.github && !viewStudent.resumeUrl && (
                     <p className="text-sm text-bauhaus-black/40 font-medium">No links provided</p>
                   )}

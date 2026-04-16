@@ -38,6 +38,7 @@ import PlacementSettings from './components/admin/PlacementSettings';
 
 // Public pages
 import LandingPage from './pages/LandingPage';
+import ContactUs from './pages/ContactUs';
 import NotFound from './pages/NotFound';
 import Unauthorized from './pages/Unauthorized';
 
@@ -48,15 +49,30 @@ function App() {
     return <Loader text="Starting PMS..." />;
   }
 
+  // ── Task 5 fix: determine if current route is a public-only page ──
+  // These pages render WITHOUT Navbar/Sidebar (they have their own nav)
+  const publicOnlyPaths = ['/contact'];
+  const isPublicOnlyPage = publicOnlyPaths.some(p => window.location.pathname === p);
+
+  // The landing page ('/') is always accessible, even when logged in.
+  // It is NOT wrapped in ProtectedRoute, so both logged-in and logged-out users
+  // can visit it freely. The Navbar adjusts its links based on auth state.
+  const isLandingPage = window.location.pathname === '/';
+
+  // Show sidebar only for authenticated users on dashboard routes (not on landing page)
+  const showSidebar = isAuthenticated && !isLandingPage && !isPublicOnlyPage;
+  const showNavbar = !isPublicOnlyPage;
+
   return (
     <div className="min-h-screen bg-bauhaus-white font-bauhaus">
-      <Navbar />
+      {showNavbar && <Navbar />}
       <div className="flex">
-        {isAuthenticated && <Sidebar />}
-        <main className={`flex-1 w-full min-w-0 ${isAuthenticated ? 'p-4 sm:p-6 lg:p-8' : ''}`}>
+        {showSidebar && <Sidebar />}
+        <main className={`flex-1 w-full min-w-0 ${showSidebar ? 'p-4 sm:p-6 lg:p-8' : ''}`}>
           <Routes>
-            {/* Public */}
+            {/* ── Public routes (always accessible) ── */}
             <Route path="/" element={<LandingPage />} />
+            <Route path="/contact" element={<ContactUs />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/verify-otp" element={<VerifyOTP />} />

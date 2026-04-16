@@ -3,9 +3,12 @@ import { Save, PlusCircle, X, Upload, Linkedin, Github, CheckCircle, FileDown } 
 import api from '../../services/api';
 import Loader from '../common/Loader';
 import SkillsSelector from '../common/SkillsSelector';
+import ResumeViewer from '../common/ResumeViewer';
 import { generateResumePDF } from '../../utils/resumeGenerator';
+import { useAuth } from '../../context/AuthContext';
 
 const StudentProfile = () => {
+  const { updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -20,6 +23,7 @@ const StudentProfile = () => {
   const [picUploading, setPicUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const picInputRef = useRef(null);
+  const [showResume, setShowResume] = useState(false);
 
   // Project form
   const [projectForm, setProjectForm] = useState({ title: '', description: '', link: '' });
@@ -261,6 +265,9 @@ const StudentProfile = () => {
       if (res.data.success) {
         setProfile(res.data.data);
         setMessage({ type: 'success', text: 'Profile saved successfully!' });
+        // Sync updated name into AuthContext so navbar/greeting update immediately
+        const updatedName = res.data.data?.user?.name || payload.name;
+        if (updatedName) updateUser({ name: updatedName });
       }
     } catch (err) {
       setMessage({ type: 'error', text: err.response?.data?.message || 'Save failed' });
@@ -819,9 +826,18 @@ const StudentProfile = () => {
         <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm">
           <h2 className="text-lg font-black text-bauhaus-black mb-4 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2">Resume</h2>
           {profile.resumeUrl && (
-            <p className="text-sm text-bauhaus-blue mb-3 flex items-center gap-1.5 font-bold">
-              <CheckCircle className="w-4 h-4" /> Resume uploaded
-            </p>
+            <div className="flex items-center gap-3 mb-3">
+              <p className="text-sm text-bauhaus-blue flex items-center gap-1.5 font-bold">
+                <CheckCircle className="w-4 h-4" /> Resume uploaded
+              </p>
+              <button
+                onClick={() => setShowResume(true)}
+                className="px-3 py-1.5 bg-bauhaus-blue/10 text-bauhaus-blue text-xs font-black border-2 border-bauhaus-blue hover:bg-bauhaus-blue hover:text-white transition uppercase tracking-wider"
+                id="view-resume-btn"
+              >
+                View Resume
+              </button>
+            </div>
           )}
           <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-bauhaus-muted text-bauhaus-black text-sm font-bold hover:bg-bauhaus-yellow/30 transition cursor-pointer border-2 border-bauhaus-black uppercase tracking-wider">
             <Upload className="w-4 h-4" />
@@ -873,6 +889,15 @@ const StudentProfile = () => {
           {saving ? 'Saving...' : 'Save Profile'}
         </button>
       </div>
+
+      {/* Resume Viewer Modal */}
+      {showResume && profile.resumeUrl && (
+        <ResumeViewer
+          url={profile.resumeUrl}
+          studentName={profile._userName || profile.user?.name || 'Student'}
+          onClose={() => setShowResume(false)}
+        />
+      )}
     </div>
   );
 };

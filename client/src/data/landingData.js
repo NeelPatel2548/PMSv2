@@ -1,112 +1,25 @@
+// ─── STATIC TOP RECRUITERS ─────────────────────────────────────────────────
+// To add a new static company, add a new entry with name, package, hired.
+// Logos are fetched dynamically via Logo.dev API using the company name.
+// Template:
+//   { name: "COMPANY", package: "X LPA", hired: N, isStatic: true },
+// ────────────────────────────────────────────────────────────────────────────
 export const topRecruiters = [
-  { 
-    id: 1, 
-    name: "Google", 
-    logo: "G", 
-    color: "from-blue-500 to-green-500",
-    bg: "bg-blue-50",
-    package: "45 LPA",
-    hired: 12
-  },
-  { 
-    id: 2, 
-    name: "Microsoft", 
-    logo: "M", 
-    color: "from-blue-600 to-cyan-500",
-    bg: "bg-blue-50",
-    package: "42 LPA",
-    hired: 8
-  },
-  { 
-    id: 3, 
-    name: "Amazon", 
-    logo: "A", 
-    color: "from-orange-500 to-yellow-500",
-    bg: "bg-orange-50",
-    package: "38 LPA",
-    hired: 15
-  },
-  { 
-    id: 4, 
-    name: "Infosys", 
-    logo: "I", 
-    color: "from-indigo-600 to-blue-500",
-    bg: "bg-indigo-50",
-    package: "8 LPA",
-    hired: 45
-  },
-  { 
-    id: 5, 
-    name: "TCS", 
-    logo: "T", 
-    color: "from-purple-600 to-indigo-500",
-    bg: "bg-purple-50",
-    package: "7 LPA",
-    hired: 60
-  },
-  { 
-    id: 6, 
-    name: "Wipro", 
-    logo: "W", 
-    color: "from-green-500 to-teal-500",
-    bg: "bg-green-50",
-    package: "6.5 LPA",
-    hired: 38
-  },
-  { 
-    id: 7, 
-    name: "Accenture", 
-    logo: "A", 
-    color: "from-purple-500 to-pink-500",
-    bg: "bg-purple-50",
-    package: "9 LPA",
-    hired: 30
-  },
-  { 
-    id: 8, 
-    name: "Deloitte", 
-    logo: "D", 
-    color: "from-green-600 to-emerald-500",
-    bg: "bg-green-50",
-    package: "12 LPA",
-    hired: 20
-  },
-  { 
-    id: 9, 
-    name: "Cognizant", 
-    logo: "C", 
-    color: "from-blue-500 to-indigo-600",
-    bg: "bg-blue-50",
-    package: "7 LPA",
-    hired: 42
-  },
-  { 
-    id: 10, 
-    name: "IBM", 
-    logo: "I", 
-    color: "from-blue-700 to-blue-500",
-    bg: "bg-blue-50",
-    package: "15 LPA",
-    hired: 18
-  },
-  { 
-    id: 11, 
-    name: "Adobe", 
-    logo: "A", 
-    color: "from-red-500 to-orange-500",
-    bg: "bg-red-50",
-    package: "35 LPA",
-    hired: 6
-  },
-  { 
-    id: 12, 
-    name: "Flipkart", 
-    logo: "F", 
-    color: "from-yellow-500 to-orange-500",
-    bg: "bg-yellow-50",
-    package: "28 LPA",
-    hired: 10
-  },
+  { name: "Google", package: "45 LPA", hired: 12, isStatic: true },
+  { name: "Microsoft", package: "42 LPA", hired: 8, isStatic: true },
+  { name: "Amazon", package: "38 LPA", hired: 15, isStatic: true },
+  { name: "Infosys", package: "8 LPA", hired: 10, isStatic: true },
+  { name: "TCS", package: "7 LPA", hired: 8, isStatic: true },
+  { name: "Wipro", package: "6.5 LPA", hired: 18, isStatic: true },
+  { name: "Accenture", package: "9 LPA", hired: 13, isStatic: true },
+  { name: "Deloitte", package: "12 LPA", hired: 16, isStatic: true },
+  { name: "Cognizant", package: "7 LPA", hired: 8, isStatic: true },
+  { name: "IBM", package: "15 LPA", hired: 18, isStatic: true },
+  { name: "Adobe", package: "35 LPA", hired: 6, isStatic: true },
+  { name: "Flipkart", package: "28 LPA", hired: 10, isStatic: true },
+  { name: "CasePoint", package: "3 LPA", hired: 10, isStatic: true },
+  { name: "Zignuts", package: "4 LPA", hired: 10, isStatic: true },
+  { name: "Vivansh Infotech", package: "28 LPA", hired: 10, isStatic: true },
 ];
 
 export const testimonials = [
@@ -174,7 +87,7 @@ export const howItWorks = [
     color: "bg-indigo-600"
   },
   {
-    step: "02", 
+    step: "02",
     title: "Get verified",
     description: "Your placement officer verifies your academic records, making you eligible for top company drives.",
     icon: "shield-check",

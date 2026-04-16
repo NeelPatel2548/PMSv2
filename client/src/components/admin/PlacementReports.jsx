@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react';
-import { PlusCircle, FileText } from 'lucide-react';
+import { PlusCircle, FileText, Trash2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../../services/api';
 import Loader from '../common/Loader';
+
+const currentYear = new Date().getFullYear();
+// Generate year options like "2023-24", "2024-25", etc.
+const yearOptions = Array.from({ length: 6 }, (_, i) => {
+  const y = currentYear - 3 + i;
+  return `${y}-${String(y + 1).slice(-2)}`;
+});
 
 const PlacementReports = () => {
   const [reports, setReports] = useState([]);
@@ -10,6 +17,7 @@ const PlacementReports = () => {
   const [generating, setGenerating] = useState(false);
   const [academicYear, setAcademicYear] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [deleting, setDeleting] = useState(null);
 
   const fetchReports = async () => {
     try {
@@ -21,7 +29,7 @@ const PlacementReports = () => {
   useEffect(() => { fetchReports(); }, []);
 
   const generateReport = async () => {
-    if (!academicYear) return setMessage({ type: 'error', text: 'Enter academic year' });
+    if (!academicYear) return setMessage({ type: 'error', text: 'Select an academic year' });
     setGenerating(true);
     setMessage({ type: '', text: '' });
     try {
@@ -34,6 +42,20 @@ const PlacementReports = () => {
     } catch (err) {
       setMessage({ type: 'error', text: err.response?.data?.message || 'Failed' });
     } finally { setGenerating(false); }
+  };
+
+  const deleteReport = async (id) => {
+    if (!window.confirm('Delete this report? This cannot be undone.')) return;
+    setDeleting(id);
+    try {
+      const res = await api.delete(`/admin/reports/${id}`);
+      if (res.data.success) {
+        setReports(prev => prev.filter(r => r._id !== id));
+        setMessage({ type: 'success', text: 'Report deleted' });
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to delete' });
+    } finally { setDeleting(null); }
   };
 
   if (loading) return <Loader />;
@@ -52,8 +74,17 @@ const PlacementReports = () => {
           <div className={`mb-3 p-2 text-sm font-bold border-2 border-bauhaus-black ${message.type === 'success' ? 'bg-bauhaus-yellow text-bauhaus-black' : 'bg-bauhaus-red text-white'}`}>{message.text}</div>
         )}
         <div className="flex gap-3">
-          <input type="text" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)}
-            placeholder="e.g. 2024-25" className="bauhaus-input flex-1" />
+          <select
+            value={academicYear}
+            onChange={(e) => setAcademicYear(e.target.value)}
+            className="bauhaus-input flex-1"
+            id="academic-year-select"
+          >
+            <option value="">Select Academic Year</option>
+            {yearOptions.map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
           <button onClick={generateReport} disabled={generating}
             className="px-4 py-2 bg-bauhaus-blue text-white text-sm font-black border-2 border-bauhaus-black hover:opacity-90 transition flex items-center gap-2 disabled:opacity-60 uppercase">
             <PlusCircle className="w-4 h-4" />{generating ? 'Generating...' : 'Generate'}
@@ -76,6 +107,15 @@ const PlacementReports = () => {
                   <h3 className="text-lg font-black text-bauhaus-black uppercase">Academic Year: {report.academicYear}</h3>
                   <p className="text-xs text-bauhaus-black/30 font-bold">Generated: {new Date(report.createdAt).toLocaleString()}</p>
                 </div>
+                <button
+                  onClick={() => deleteReport(report._id)}
+                  disabled={deleting === report._id}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-bauhaus-red/10 text-bauhaus-red text-xs font-black hover:bg-bauhaus-red hover:text-white border-2 border-bauhaus-red transition disabled:opacity-50 uppercase"
+                  id={`delete-report-${report._id}`}
+                >
+                  <Trash2 className="w-3 h-3" />
+                  {deleting === report._id ? 'Deleting...' : 'Delete'}
+                </button>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">

@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Users, Building2, Briefcase, TrendingUp, Trophy, FileCheck, Target, ShieldCheck, BarChart2, Calendar, Zap, Activity, UserPlus, Search, Rocket } from 'lucide-react';
-import { topRecruiters, testimonials, placementStats, howItWorks, features } from '../data/landingData';
+import { ArrowRight, Users, Building2, Briefcase, TrendingUp, Trophy, FileCheck, Target, ShieldCheck, BarChart2, Calendar, Zap, Activity, UserPlus, Search, Rocket, LayoutDashboard } from 'lucide-react';
+import { testimonials, placementStats, howItWorks, features } from '../data/landingData';
+import TopRecruiters from '../components/common/TopRecruiters';
+import { useAuth } from '../context/AuthContext';
 
 const iconMap = {
   'trending-up': TrendingUp, 'indian-rupee': Trophy, trophy: Trophy,
@@ -14,6 +16,18 @@ const bauhausColors = ['bg-bauhaus-red', 'bg-bauhaus-blue', 'bg-bauhaus-yellow',
 const bauhausTextColors = ['text-white', 'text-white', 'text-bauhaus-black', 'text-white'];
 
 const LandingPage = () => {
+  const { isAuthenticated, user } = useAuth();
+
+  // Task 5: determine the user's dashboard path
+  const getDashboardLink = () => {
+    switch (user?.role) {
+      case 'student': return '/student/dashboard';
+      case 'company': return '/company/dashboard';
+      case 'admin': return '/admin/dashboard';
+      default: return '/';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-bauhaus-white font-bauhaus">
 
@@ -38,14 +52,25 @@ const LandingPage = () => {
               The complete platform connecting students, companies, and placement officers. Apply, track, and get placed — all in one system.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link to="/register"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-bauhaus-red text-white font-black border-4 border-bauhaus-black shadow-hard-lg hover:opacity-90 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wider text-sm">
-                Get Started <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link to="/login"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-white text-bauhaus-black font-black border-4 border-bauhaus-black shadow-hard-lg hover:bg-bauhaus-muted active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wider text-sm">
-                Login
-              </Link>
+              {isAuthenticated ? (
+                /* Logged-in users see a Dashboard button */
+                <Link to={getDashboardLink()}
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-bauhaus-blue text-white font-black border-4 border-bauhaus-black shadow-hard-lg hover:opacity-90 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wider text-sm">
+                  <LayoutDashboard className="w-5 h-5" /> Go to Dashboard
+                </Link>
+              ) : (
+                /* Guests see Register + Login */
+                <>
+                  <Link to="/register"
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-bauhaus-red text-white font-black border-4 border-bauhaus-black shadow-hard-lg hover:opacity-90 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wider text-sm">
+                    Get Started <ArrowRight className="w-5 h-5" />
+                  </Link>
+                  <Link to="/login"
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-white text-bauhaus-black font-black border-4 border-bauhaus-black shadow-hard-lg hover:bg-bauhaus-muted active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wider text-sm">
+                    Login
+                  </Link>
+                </>
+              )}
             </div>
           </div>
           {/* Right — Geometric composition */}
@@ -83,30 +108,7 @@ const LandingPage = () => {
       </section>
 
       {/* ═══════════════ TOP RECRUITERS MARQUEE ═══════════════ */}
-      <section className="py-16 bg-bauhaus-white border-b-4 border-bauhaus-black">
-        <div className="max-w-7xl mx-auto px-6 mb-10">
-          <h2 className="text-3xl sm:text-4xl font-black uppercase text-bauhaus-black text-center">
-            Top <span className="text-bauhaus-blue">Recruiters</span>
-          </h2>
-          <p className="text-center text-bauhaus-black/50 font-medium mt-2 uppercase tracking-wider text-sm">Companies that hire from our campus</p>
-        </div>
-        <div className="overflow-hidden">
-          <div className="marquee-track-left">
-            {[...topRecruiters, ...topRecruiters].map((r, i) => (
-              <div key={`${r.id}-${i}`} className="flex-shrink-0 mx-2 w-56 bg-white border-4 border-bauhaus-black p-4 shadow-hard-sm">
-                <div className="w-12 h-12 bg-bauhaus-black text-white flex items-center justify-center text-xl font-black mb-3">
-                  {r.logo}
-                </div>
-                <p className="font-black text-bauhaus-black uppercase text-sm">{r.name}</p>
-                <div className="flex items-center gap-3 mt-2 text-xs font-bold text-bauhaus-black/60">
-                  <span>📦 {r.package}</span>
-                  <span>👥 {r.hired} hired</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <TopRecruiters />
 
       {/* ═══════════════ HOW IT WORKS ═══════════════ */}
       <section className="py-20 bg-bauhaus-black">
@@ -222,14 +224,23 @@ const LandingPage = () => {
             Join thousands of students who have already found their dream jobs through our platform. Start your journey today.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link to="/register"
-              className="inline-flex items-center gap-2 px-10 py-4 bg-bauhaus-black text-white font-black border-4 border-bauhaus-black shadow-hard-lg hover:opacity-90 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wider">
-              Create Account <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link to="/login"
-              className="inline-flex items-center gap-2 px-10 py-4 bg-white text-bauhaus-black font-black border-4 border-bauhaus-black shadow-hard-lg hover:bg-bauhaus-muted active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wider">
-              Sign In
-            </Link>
+            {isAuthenticated ? (
+              <Link to={getDashboardLink()}
+                className="inline-flex items-center gap-2 px-10 py-4 bg-bauhaus-black text-white font-black border-4 border-white shadow-hard-lg hover:opacity-90 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wider">
+                <LayoutDashboard className="w-5 h-5" /> My Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link to="/register"
+                  className="inline-flex items-center gap-2 px-10 py-4 bg-bauhaus-black text-white font-black border-4 border-bauhaus-black shadow-hard-lg hover:opacity-90 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wider">
+                  Create Account <ArrowRight className="w-5 h-5" />
+                </Link>
+                <Link to="/login"
+                  className="inline-flex items-center gap-2 px-10 py-4 bg-white text-bauhaus-black font-black border-4 border-bauhaus-black shadow-hard-lg hover:bg-bauhaus-muted active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wider">
+                  Sign In
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -248,9 +259,9 @@ const LandingPage = () => {
               <span className="text-white/30 text-xs font-bold">v2.0</span>
             </div>
             <div className="flex flex-wrap gap-6 text-sm">
-              <Link to="/login" className="text-white/50 hover:text-white font-bold uppercase tracking-wider transition-colors">Student</Link>
-              <Link to="/login" className="text-white/50 hover:text-white font-bold uppercase tracking-wider transition-colors">Company</Link>
-              <Link to="/login" className="text-white/50 hover:text-white font-bold uppercase tracking-wider transition-colors">Admin</Link>
+              <Link to="/login" className="text-white/50 hover:text-white font-bold uppercase tracking-wider transition-colors">Login</Link>
+              <Link to="/register" className="text-white/50 hover:text-white font-bold uppercase tracking-wider transition-colors">Register</Link>
+              <Link to="/contact" className="text-white/50 hover:text-white font-bold uppercase tracking-wider transition-colors">Contact Us</Link>
             </div>
             <p className="text-white/30 text-xs font-bold uppercase tracking-wider">
               © {new Date().getFullYear()} Placement Management System

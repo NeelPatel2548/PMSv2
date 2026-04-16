@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Users, ArrowLeft, FileText, CheckCircle, XCircle, Calendar, Download } from 'lucide-react';
+import { Users, ArrowLeft, FileText, CheckCircle, XCircle, Calendar, Download, Eye } from 'lucide-react';
 import api from '../../services/api';
 import Loader from '../common/Loader';
+import ResumeViewer, { downloadResume } from '../common/ResumeViewer';
 
 const statusColors = {
   applied: 'bg-bauhaus-blue text-white',
@@ -32,6 +33,7 @@ const ApplicantList = () => {
     roundName: '', roundNumber: 1, scheduledAt: '', mode: 'online', venue: '', meetingLink: ''
   });
   const [scheduling, setScheduling] = useState(false);
+  const [resumeView, setResumeView] = useState(null); // { url, name }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -208,10 +210,20 @@ const ApplicantList = () => {
                 <span className="text-xs text-bauhaus-black/30 font-bold">Applied {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : '—'}</span>
                 <div className="flex flex-wrap gap-2">
                   {app.student?.resumeUrl ? (
-                    <a href={app.student.resumeUrl} target="_blank" rel="noreferrer"
-                      className="flex items-center gap-1 px-3 py-1.5 bg-bauhaus-muted text-xs text-bauhaus-black font-bold hover:bg-bauhaus-yellow/30 transition border-2 border-bauhaus-black/20 uppercase">
-                      <FileText className="w-3 h-3" /> Resume
-                    </a>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => setResumeView({ url: app.student.resumeUrl, name: app.student?.user?.name || 'Student' })}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-bauhaus-muted text-xs text-bauhaus-black font-bold hover:bg-bauhaus-yellow/30 transition border-2 border-bauhaus-black/20 uppercase"
+                      >
+                        <Eye className="w-3 h-3" /> View
+                      </button>
+                      <button
+                        onClick={() => downloadResume(app.student.resumeUrl, app.student?.user?.name)}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-bauhaus-muted text-xs text-bauhaus-black font-bold hover:bg-bauhaus-yellow/30 transition border-2 border-bauhaus-black/20 uppercase"
+                      >
+                        <Download className="w-3 h-3" /> PDF
+                      </button>
+                    </div>
                   ) : (
                     <span className="flex items-center gap-1 px-3 py-1.5 bg-bauhaus-muted/50 text-xs text-bauhaus-black/30 cursor-not-allowed font-bold border-2 border-bauhaus-black/10 uppercase">
                       <FileText className="w-3 h-3" /> No Resume
@@ -285,6 +297,15 @@ const ApplicantList = () => {
               className="px-4 py-2 border-2 border-bauhaus-black text-sm font-black disabled:opacity-40 hover:bg-bauhaus-muted transition uppercase">Next</button>
           </div>
         </div>
+      )}
+
+      {/* Resume Viewer Modal */}
+      {resumeView && (
+        <ResumeViewer
+          url={resumeView.url}
+          studentName={resumeView.name}
+          onClose={() => setResumeView(null)}
+        />
       )}
     </div>
   );

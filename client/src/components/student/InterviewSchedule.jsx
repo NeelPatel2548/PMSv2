@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Video, MapPin, Clock, ExternalLink } from 'lucide-react';
+import { Calendar, Video, MapPin, Clock, ExternalLink, Ban } from 'lucide-react';
 import api from '../../services/api';
 import Loader from '../common/Loader';
 
@@ -22,7 +22,8 @@ const InterviewSchedule = () => {
   if (loading) return <Loader />;
 
   const upcoming = interviews.filter(i => i.status === 'scheduled' && new Date(i.scheduledAt) >= new Date());
-  const past = interviews.filter(i => i.status !== 'scheduled' || new Date(i.scheduledAt) < new Date());
+  const past = interviews.filter(i => (i.status === 'completed') || (i.status === 'scheduled' && new Date(i.scheduledAt) < new Date()));
+  const cancelled = interviews.filter(i => i.status === 'cancelled');
 
   const resultColors = { pass: 'text-bauhaus-blue', fail: 'text-bauhaus-red', pending: 'text-bauhaus-yellow' };
 
@@ -107,6 +108,37 @@ const InterviewSchedule = () => {
                         </div>
                         <span className={`text-sm font-black flex-shrink-0 ${resultColors[int.result] || 'text-bauhaus-black/40'}`}>
                           {int.result === 'pass' ? '✅ Passed' : int.result === 'fail' ? '❌ Failed' : '⏳ Pending'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {cancelled.length > 0 && (
+            <div>
+              <h2 className="text-xs font-black text-bauhaus-black/50 uppercase tracking-[0.3em] mb-3">Cancelled</h2>
+              <div className="space-y-3">
+                {cancelled.map(int => {
+                  const d = new Date(int.scheduledAt);
+                  return (
+                    <div key={int._id} className="bg-bauhaus-muted/50 border-2 border-bauhaus-black/10 p-5 opacity-50">
+                      <div className="flex items-start gap-4">
+                        <div className="bg-bauhaus-muted min-w-[60px] text-center p-3 flex-shrink-0 border-2 border-bauhaus-black/10">
+                          <span className="text-[10px] uppercase font-black text-bauhaus-black/30">{months[d.getMonth()]}</span>
+                          <span className="block text-2xl font-black text-bauhaus-black/30 leading-tight">{d.getDate()}</span>
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-bauhaus-black/40 line-through">{int.roundName} <span className="text-bauhaus-black/30 font-medium text-sm no-underline">(Round {int.roundNumber})</span></h3>
+                          <p className="text-sm text-bauhaus-black/30 font-medium">{int.company?.name} — {int.job?.title}</p>
+                          <p className="text-xs text-bauhaus-black/30 mt-1 font-medium">{d.toLocaleString()}</p>
+                        </div>
+                        <span className="flex items-center gap-1 text-xs font-black text-bauhaus-red/60 flex-shrink-0 px-2 py-1 bg-bauhaus-red/5 border border-bauhaus-red/20">
+                          <Ban className="w-3 h-3" />
+                          {int.cancelledReason || 'Cancelled'}
                         </span>
                       </div>
                     </div>

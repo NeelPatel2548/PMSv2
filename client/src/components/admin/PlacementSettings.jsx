@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Save, CheckCircle, AlertTriangle, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Settings, Save, CheckCircle, AlertTriangle, ToggleLeft, ToggleRight, Mail, Phone, MapPin } from 'lucide-react';
 import api from '../../services/api';
 import Loader from '../common/Loader';
 
@@ -28,7 +28,13 @@ const PlacementSettings = () => {
         maxApplicationsPerStudent: settings.maxApplicationsPerStudent,
         blockPlacedFromApplying: settings.blockPlacedFromApplying,
         minCGPAOverride: settings.minCGPAOverride,
-        placementSeasonActive: settings.placementSeasonActive
+        placementSeasonActive: settings.placementSeasonActive,
+        // Branding & contact fields
+        logoUrl: settings.logoUrl,
+        companyName: settings.companyName,
+        contactEmail: settings.contactEmail,
+        phone: settings.phone,
+        address: settings.address
       });
       if (res.data.success) {
         setSettings(res.data.data);
@@ -129,6 +135,46 @@ const PlacementSettings = () => {
           <input type="number" min="0" max="10" step="0.1" value={settings.minCGPAOverride}
             onChange={(e) => setSettings(prev => ({ ...prev, minCGPAOverride: Math.min(10, Math.max(0, parseFloat(e.target.value) || 0)) }))}
             className="w-32 bauhaus-input" id="min-cgpa-input" />
+        </div>
+      </div>
+
+      {/* ─── Contact Information ─── */}
+      <div className="bg-white border-4 border-bauhaus-black p-6 shadow-hard-sm space-y-5">
+        <h2 className="text-lg font-black text-bauhaus-black mb-2 uppercase tracking-wider border-b-2 border-bauhaus-black pb-2 flex items-center gap-2">
+          <Mail className="w-5 h-5" /> Contact Information
+        </h2>
+        <p className="text-xs text-bauhaus-black/50 font-medium -mt-2">
+          This information is displayed on the public Contact Us page. The contact email also receives form submissions.
+        </p>
+
+        <div>
+          <label className="block text-sm font-black text-bauhaus-black mb-1 uppercase">Contact Email</label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bauhaus-black/30" />
+            <input type="email" value={settings.contactEmail || ''}
+              onChange={(e) => setSettings(prev => ({ ...prev, contactEmail: e.target.value }))}
+              className="bauhaus-input pl-10 w-full" placeholder="admin@pms.com" id="contact-email-input" />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-black text-bauhaus-black mb-1 uppercase">Phone</label>
+          <div className="relative">
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bauhaus-black/30" />
+            <input type="text" value={settings.phone || ''}
+              onChange={(e) => setSettings(prev => ({ ...prev, phone: e.target.value }))}
+              className="bauhaus-input pl-10 w-full" placeholder="+91 98765 43210" id="phone-input" />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-black text-bauhaus-black mb-1 uppercase">Address</label>
+          <div className="relative">
+            <MapPin className="absolute left-3 top-3 w-4 h-4 text-bauhaus-black/30" />
+            <textarea value={settings.address || ''}
+              onChange={(e) => setSettings(prev => ({ ...prev, address: e.target.value }))}
+              className="bauhaus-input pl-10 w-full min-h-[80px] resize-y" placeholder="123 University Road, City, State - 000000" id="address-input" />
+          </div>
         </div>
       </div>
 

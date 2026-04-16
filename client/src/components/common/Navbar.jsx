@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import NotificationBell from './NotificationBell';
-import { LogOut, User, GraduationCap, Building2, Shield, Menu, X } from 'lucide-react';
+import { LogOut, User, GraduationCap, Building2, Shield, Menu, X, Home } from 'lucide-react';
 import ErrorBoundary from './ErrorBoundary';
 import { useState } from 'react';
 
@@ -20,6 +20,7 @@ const pageTitles = {
   '/admin/companies': 'Manage Companies',
   '/admin/jobs': 'Manage Jobs',
   '/admin/reports': 'Placement Reports',
+  '/admin/settings': 'Settings',
 };
 
 const Navbar = () => {
@@ -28,9 +29,10 @@ const Navbar = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // ── Task 5 fix: logout always goes to landing page ──
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    navigate('/');
   };
 
   const getRoleIcon = () => {
@@ -59,13 +61,16 @@ const Navbar = () => {
 
   const currentTitle = pageTitles[location.pathname] || '';
 
+  // ── Task 5 fix: "PMS" logo always links to landing page ("/"), NOT to dashboard ──
+  // The dashboard link is now a separate explicit button.
   return (
     <nav className="sticky top-0 z-40 bg-bauhaus-white border-b-4 border-bauhaus-black">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo + Page Title */}
           <div className="flex items-center gap-4">
-            <Link to={isAuthenticated ? getDashboardLink() : '/'} className="flex items-center gap-2.5">
+            {/* ── Task 5 fix: Logo ALWAYS links to "/" (landing page) ── */}
+            <Link to="/" className="flex items-center gap-2.5">
               {/* Geometric logo shapes */}
               <div className="flex items-center gap-1">
                 <div className="w-4 h-4 rounded-full bg-bauhaus-red border-2 border-bauhaus-black" />
@@ -86,9 +91,17 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-3">
             {isAuthenticated ? (
               <>
+                {/* ── Task 5 fix: Explicit "Home" link to landing page ── */}
+                <Link
+                  to="/"
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-bauhaus-black hover:text-bauhaus-blue hover:bg-bauhaus-blue/10 transition-all uppercase tracking-wider"
+                  title="Landing Page"
+                >
+                  <Home className="w-4 h-4" /> Home
+                </Link>
                 <ErrorBoundary><NotificationBell /></ErrorBoundary>
                 <div className="h-6 w-1 bg-bauhaus-black" />
-                <div className="flex items-center gap-2.5 group cursor-default">
+                <Link to={getDashboardLink()} className="flex items-center gap-2.5 group cursor-pointer hover:opacity-80 transition-opacity" title="Go to Dashboard">
                   <div className="w-8 h-8 bg-bauhaus-black flex items-center justify-center text-white text-xs font-black border-2 border-bauhaus-black">
                     {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
@@ -98,7 +111,7 @@ const Navbar = () => {
                       {user?.role}
                     </span>
                   </div>
-                </div>
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-bauhaus-black hover:text-bauhaus-red hover:bg-bauhaus-red/10 transition-all uppercase tracking-wider"
@@ -109,6 +122,12 @@ const Navbar = () => {
               </>
             ) : (
               <>
+                <Link
+                  to="/contact"
+                  className="px-4 py-2 text-sm font-bold text-bauhaus-black hover:text-bauhaus-blue transition-colors uppercase tracking-widest"
+                >
+                  Contact
+                </Link>
                 <Link
                   to="/login"
                   className="px-4 py-2 text-sm font-bold text-bauhaus-black hover:text-bauhaus-red transition-colors uppercase tracking-widest"
@@ -155,6 +174,14 @@ const Navbar = () => {
                     </span>
                   </div>
                 </div>
+                {/* ── Task 5 fix: Explicit "PMS Home" link to landing page in mobile nav ── */}
+                <Link
+                  to="/"
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-3 py-2.5 text-sm font-bold text-bauhaus-black hover:bg-bauhaus-muted transition-colors uppercase tracking-widest"
+                >
+                  <Home className="w-4 h-4 inline mr-2" /> PMS Home
+                </Link>
                 <Link
                   to={getDashboardLink()}
                   onClick={() => setMobileOpen(false)}
@@ -171,6 +198,13 @@ const Navbar = () => {
               </>
             ) : (
               <>
+                <Link
+                  to="/contact"
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-3 py-2.5 text-sm font-bold text-bauhaus-black hover:bg-bauhaus-muted uppercase tracking-widest"
+                >
+                  Contact Us
+                </Link>
                 <Link
                   to="/login"
                   onClick={() => setMobileOpen(false)}

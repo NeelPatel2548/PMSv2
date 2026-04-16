@@ -3,8 +3,10 @@ import { Save } from 'lucide-react';
 import api from '../../services/api';
 import Loader from '../common/Loader';
 import TierSelector from '../common/TierSelector';
+import { useAuth } from '../../context/AuthContext';
 
 const CompanyProfile = () => {
+  const { updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -102,7 +104,11 @@ const CompanyProfile = () => {
         website: profile.website, description: profile.description,
         hrName: profile.hrName, hrEmail: profile.hrEmail, hrPhone: profile.hrPhone, tier: profile.tier
       });
-      if (res.data.success) setMessage({ type: 'success', text: 'Profile updated!' });
+      if (res.data.success) {
+        setMessage({ type: 'success', text: 'Profile updated!' });
+        // Sync company name into AuthContext so navbar updates immediately
+        if (profile.name) updateUser({ name: profile.name });
+      }
     } catch (err) { setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to update' }); }
     finally { setSaving(false); }
   };

@@ -14,9 +14,10 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // ── Task 5 fix: logout always goes to landing page ──
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    navigate('/');
   };
 
   const studentLinks = [
