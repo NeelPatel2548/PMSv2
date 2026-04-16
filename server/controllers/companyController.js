@@ -292,6 +292,12 @@ exports.toggleJobStatus = async (req, res) => {
         }));
       if (notifications.length > 0) await Notification.insertMany(notifications);
 
+      // Cancel all scheduled interviews for this job
+      await Interview.updateMany(
+        { job: job._id, status: 'scheduled' },
+        { status: 'cancelled', cancelledReason: 'Job closed by company' }
+      );
+
       job.status = 'closed';
     } else {
       job.status = 'open';
@@ -385,6 +391,14 @@ exports.updateApplicationStatus = async (req, res) => {
     if (offerLetterUrl) application.offerLetterUrl = offerLetterUrl;
 
     await application.save();
+
+    // Cancel all scheduled interviews when application is rejected
+    if (status === 'rejected') {
+      await Interview.updateMany(
+        { application: application._id, status: 'scheduled' },
+        { status: 'cancelled', cancelledReason: 'Application rejected' }
+      );
+    }
 
     // If selected, update student placement status
     if (status === 'selected') {
@@ -519,12 +533,17 @@ exports.submitRoundResult = async (req, res) => {
     interview.status = 'completed';
     await interview.save();
 
-    // If result is fail, update application to rejected
+    // If result is fail, update application to rejected and cancel remaining interviews
     if (result === 'fail') {
       await Application.findByIdAndUpdate(interview.application, {
         status: 'rejected',
         remarks: `Failed at ${interview.roundName}`
       });
+      // Cancel remaining scheduled interviews for this application
+      await Interview.updateMany(
+        { application: interview.application, status: 'scheduled', _id: { $ne: interview._id } },
+        { status: 'cancelled', cancelledReason: `Failed at ${interview.roundName}` }
+      );
     }
 
     // Notify student

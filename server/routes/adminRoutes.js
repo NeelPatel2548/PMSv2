@@ -19,6 +19,7 @@ const {
   createAnnouncement,
   generateReport,
   getReports,
+  deleteReport,
   exportUnplacedCSV
 } = require('../controllers/adminController');
 
@@ -68,6 +69,7 @@ router.get('/reports', getReports);
 router.post('/reports', [
   body('academicYear').trim().notEmpty().withMessage('Academic year is required'),
 ], generateReport);
+router.delete('/reports/:id', deleteReport);
 
 // Settings
 const { getSettings, updateSettings } = require('../controllers/settingsController');

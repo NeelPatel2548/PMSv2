@@ -89,6 +89,40 @@ app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'PMS API is running' });
 });
 
+// ---------------------------------------------------------------------------
+// PDF proxy — Task 1 fix
+// Cloudinary serves raw-uploaded PDFs with Content-Type: application/octet-stream
+// which causes browsers to download instead of display inline. This proxy
+// re-fetches the Cloudinary URL and serves with proper PDF headers.
+// ---------------------------------------------------------------------------
+app.get('/api/pdf-proxy', async (req, res) => {
+  try {
+    const { url } = req.query;
+    if (!url) {
+      return res.status(400).json({ success: false, message: 'URL required' });
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      return res.status(response.status).json({ success: false, message: 'Failed to fetch PDF' });
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'inline',
+      'Cache-Control': 'public, max-age=86400',
+      'Content-Length': buffer.length,
+    });
+
+    return res.send(buffer);
+  } catch (err) {
+    console.error('PDF proxy error:', err.message);
+    return res.status(500).json({ success: false, message: 'Failed to fetch PDF', error: err.message });
+  }
+});
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);

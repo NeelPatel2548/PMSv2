@@ -24,7 +24,13 @@ exports.updateSettings = async (req, res) => {
       'maxApplicationsPerStudent',
       'blockPlacedFromApplying',
       'minCGPAOverride',
-      'placementSeasonActive'
+      'placementSeasonActive',
+      // Branding & contact fields (Tasks 2 & 4)
+      'logoUrl',
+      'companyName',
+      'contactEmail',
+      'phone',
+      'address'
     ];
 
     let settings = await SystemSettings.findOne();
@@ -35,6 +41,18 @@ exports.updateSettings = async (req, res) => {
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
         settings[field] = req.body[field];
+      }
+    }
+
+    // Validate logoUrl is a valid web URL (not a local path)
+    if (req.body.logoUrl) {
+      try {
+        const url = new URL(req.body.logoUrl);
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          return error(res, 'Logo URL must use http or https protocol', 400);
+        }
+      } catch {
+        return error(res, 'Invalid logo URL format. Must be a valid web URL (e.g., https://example.com/logo.png)', 400);
       }
     }
 

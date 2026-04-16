@@ -491,6 +491,12 @@ exports.withdrawApplication = async (req, res) => {
     application.status = 'withdrawn';
     await application.save();
 
+    // Cancel all scheduled interviews for this withdrawn application
+    await Interview.updateMany(
+      { application: application._id, status: 'scheduled' },
+      { status: 'cancelled', cancelledReason: 'Student withdrew application' }
+    );
+
     return success(res, application, 'Application withdrawn');
   } catch (err) {
     console.error('Withdraw application error:', err);
@@ -681,7 +687,7 @@ exports.respondToOffer = async (req, res) => {
         user: application.company.user,
         title: 'Offer Accepted',
         message: `${req.user.name} has accepted the offer for "${application.job.title}"`,
-        type: 'application',
+        type: 'application_update',
         link: `/company/jobs/${application.job._id}/applicants`
       });
     } else {
@@ -709,7 +715,7 @@ exports.respondToOffer = async (req, res) => {
         user: application.company.user,
         title: 'Offer Declined',
         message: `${req.user.name} has declined the offer for "${application.job.title}"`,
-        type: 'application',
+        type: 'application_update',
         link: `/company/jobs/${application.job._id}/applicants`
       });
     }

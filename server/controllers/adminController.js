@@ -588,6 +588,22 @@ exports.getReports = async (req, res) => {
   }
 };
 
+// @desc    Delete a placement report
+// @route   DELETE /api/admin/reports/:id
+// @access  Private (admin)
+exports.deleteReport = async (req, res) => {
+  try {
+    const report = await PlacementReport.findByIdAndDelete(req.params.id);
+    if (!report) {
+      return error(res, 'Report not found', 404);
+    }
+    return success(res, null, 'Report deleted');
+  } catch (err) {
+    console.error('Delete report error:', err);
+    return error(res, 'Failed to delete report', 500);
+  }
+};
+
 // @desc    Export unplaced students as CSV
 // @route   GET /api/admin/students/export/unplaced
 // @access  Private (admin)

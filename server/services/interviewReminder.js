@@ -47,7 +47,7 @@ const checkUpcomingInterviews = async () => {
               ? `Venue: ${interview.venue}`
               : ''
         }`,
-        type: 'interview_reminder',
+        type: 'interview_scheduled',
         link: '/student/interviews'
       });
 
