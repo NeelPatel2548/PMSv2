@@ -49,7 +49,7 @@ const LandingPage = () => {
               Starts Here
             </h1>
             <p className="text-lg text-bauhaus-black/60 font-medium max-w-lg mb-10 leading-relaxed">
-              The complete platform connecting students, companies, and placement officers. Apply, track, and get placed — all in one system.
+              The complete platform connecting students, companies, and placement officers. Apply, track, and get placed all in one system.
             </p>
             <div className="flex flex-wrap gap-4">
               {isAuthenticated ? (
