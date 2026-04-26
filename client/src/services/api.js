@@ -14,7 +14,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      const publicPaths = ['/', '/login', '/register', '/verify-otp', '/contact'];
+      const publicPaths = ['/', '/login', '/register', '/verify-otp', '/change-password', '/contact'];
       if (!publicPaths.includes(window.location.pathname)) {
         window.location.href = '/login';
       }

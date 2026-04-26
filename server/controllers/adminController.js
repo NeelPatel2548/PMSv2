@@ -534,10 +534,21 @@ exports.generateReport = async (req, res) => {
     const totalApplications = await Application.countDocuments();
 
     // Calculate package stats from selected applications
-    const selectedApps = await Application.find({ status: 'selected', offeredPackage: { $ne: null } });
+    // offeredPackage is a String field (e.g. "12 LPA", "8-10 LPA", "Not Disclosed")
+    // so we extract the first numeric value via regex for reliable parsing.
+    const extractLPA = (str) => {
+      if (!str) return 0;
+      const match = String(str).match(/[\d.]+/);
+      return match ? parseFloat(match[0]) : 0;
+    };
+
+    const selectedApps = await Application.find({
+      status: 'selected',
+      offeredPackage: { $exists: true, $ne: null, $ne: '' }
+    });
     let packages = selectedApps
-      .map(a => parseFloat(a.offeredPackage))
-      .filter(p => !isNaN(p));
+      .map(a => extractLPA(a.offeredPackage))
+      .filter(p => p > 0);
 
     const avgPackage = packages.length > 0
       ? packages.reduce((a, b) => a + b, 0) / packages.length

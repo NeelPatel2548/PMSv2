@@ -37,10 +37,12 @@ const VerifyOTP = () => {
     }
   }, [email, purpose, navigate]);
 
-  // If user is already authenticated, redirect to dashboard
+  // If user is already authenticated, redirect to dashboard (or change-password)
   useEffect(() => {
     if (user) {
-      if (user.role === 'student') navigate('/student/dashboard', { replace: true });
+      if (user.mustChangePassword) {
+        navigate('/change-password', { replace: true });
+      } else if (user.role === 'student') navigate('/student/dashboard', { replace: true });
       else if (user.role === 'company') navigate('/company/dashboard', { replace: true });
       else if (user.role === 'admin') navigate('/admin/dashboard', { replace: true });
     }

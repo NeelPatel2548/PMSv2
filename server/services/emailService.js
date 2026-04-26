@@ -403,10 +403,75 @@ const buildContactAutoReplyHtml = ({ name, message, companyName }) => {
   return bauhausWrapper('WE RECEIVED YOUR MESSAGE', bodyContent);
 };
 
+// ---------------------------------------------------------------------------
+// Temporary Password Email (Forgot Password Flow)
+// ---------------------------------------------------------------------------
+
+/**
+ * Send temporary password email
+ * @param {string} email - recipient email
+ * @param {string} tempPassword - the generated temporary password (plain text)
+ */
+const sendTempPasswordEmail = async (email, tempPassword) => {
+  const subject = 'PMS — Your Temporary Password';
+
+  const bodyContent = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#1a1a2e;padding-bottom:8px;">
+        Hello,
+      </td></tr>
+      <tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#1a1a2e;padding-bottom:20px;">
+        A temporary password has been generated for your PMS account. Use it to log in and set a new permanent password immediately.
+      </td></tr>
+
+      <!-- Temp Password Box -->
+      <tr><td>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px 0;">
+          <tr>
+            <td align="center">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0efe6;border:3px solid #1a1a2e;padding:20px 36px;">
+                <tr>
+                  <td style="font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;color:#888;text-align:center;padding-bottom:8px;">
+                    YOUR TEMPORARY PASSWORD
+                  </td>
+                </tr>
+                <tr>
+                  <td style="font-family:'Courier New',Courier,monospace;font-size:28px;font-weight:bold;letter-spacing:4px;color:#e63946;text-align:center;background-color:#fff;border:2px solid #1a1a2e;padding:12px 24px;">
+                    ${tempPassword}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+
+      ${yellowAccent()}
+
+      <tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;color:#888;padding-bottom:8px;padding-top:8px;">
+        NEXT STEPS
+      </td></tr>
+      <tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.8;color:#1a1a2e;padding-bottom:4px;">
+        1. Go to PMS and <strong>log in</strong> using the temporary password above.<br>
+        2. You will be prompted to <strong>set a new permanent password</strong>.<br>
+        3. Choose a strong password (minimum 8 characters).
+      </td></tr>
+
+      <tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.6;color:#888;padding-top:16px;border-left:4px solid #e63946;padding-left:12px;">
+        &#9888; If you did not request this password reset, your account may have been compromised. Please contact the administrator immediately.
+      </td></tr>
+    </table>`;
+
+  const html = bauhausWrapper('TEMPORARY PASSWORD', bodyContent);
+
+  return sendEmail(email, subject, html);
+};
+
 module.exports = {
   sendEmail,
   sendOTPEmail,
   sendInterviewReminderEmail,
+  sendTempPasswordEmail,
   buildContactAdminHtml,
   buildContactAutoReplyHtml
 };

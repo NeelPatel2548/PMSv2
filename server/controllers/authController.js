@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
@@ -5,7 +6,7 @@ const Student = require('../models/Student');
 const Company = require('../models/Company');
 const { success, error } = require('../utils/apiResponse');
 const { generateOTP, hashOTP, verifyOTP, getOTPExpiry } = require('../services/otpService');
-const { sendOTPEmail } = require('../services/emailService');
+const { sendOTPEmail, sendTempPasswordEmail } = require('../services/emailService');
 const { generateToken, setTokenCookie } = require('../middleware/authMiddleware');
 
 // ---------------------------------------------------------------------------
@@ -335,7 +336,8 @@ exports.login = async (req, res) => {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified,
-        profileCompleted: user.profileCompleted
+        profileCompleted: user.profileCompleted,
+        mustChangePassword: user.mustChangePassword || false
       }, 'Login successful');
     }
 
@@ -413,7 +415,8 @@ exports.loginVerify = async (req, res) => {
       role: user.role,
       isVerified: user.isVerified,
       profileCompleted: user.profileCompleted,
-      profileImageUrl: user.profileImageUrl
+      profileImageUrl: user.profileImageUrl,
+      mustChangePassword: user.mustChangePassword || false
     }, 'Login successful');
   } catch (err) {
     console.error('Login verify error:', err);
@@ -586,10 +589,170 @@ exports.getMe = async (req, res) => {
       isVerified: user.isVerified,
       isActive: user.isActive,
       profileCompleted: user.profileCompleted,
-      profileImageUrl: user.profileImageUrl
+      profileImageUrl: user.profileImageUrl,
+      mustChangePassword: user.mustChangePassword || false
     }, 'User fetched');
   } catch (err) {
     console.error('Get me error:', err);
     return error(res, 'Failed to fetch user', 500);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// @desc    Forgot Password Step 1 — check if email exists
+// @route   POST /api/auth/forgot-password-check
+// @access  Public
+// ---------------------------------------------------------------------------
+exports.checkEmailExists = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return error(res, 'Validation failed', 400, errors.array());
+    }
+
+    const { email } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      return error(res, 'No account found with this email', 404);
+    }
+
+    if (!user.isActive) {
+      return error(res, 'Account has been suspended. Contact admin.', 403);
+    }
+
+    return success(res, { userId: user._id }, 'Email found');
+  } catch (err) {
+    console.error('Check email exists error:', err);
+    return error(res, 'Failed to check email', 500);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// @desc    Forgot Password Step 2A — verify current password
+// @route   POST /api/auth/forgot-password-verify-current
+// @access  Public
+// ---------------------------------------------------------------------------
+exports.verifyCurrentPassword = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return error(res, 'Validation failed', 400, errors.array());
+    }
+
+    const { email, currentPassword } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
+    if (!user) {
+      return error(res, 'User not found', 404);
+    }
+
+    if (!user.isActive) {
+      return error(res, 'Account has been suspended. Contact admin.', 403);
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+
+    if (isMatch) {
+      // Password is correct — user remembers it, no changes needed
+      return success(res, { passwordCorrect: true }, 'Password verified successfully');
+    }
+
+    // Password is wrong — generate temp password and email it
+    const tempPassword = crypto.randomBytes(7).toString('hex').slice(0, 10);
+    const hashedTemp = await bcrypt.hash(tempPassword, 12);
+
+    user.password = hashedTemp;
+    user.$locals.skipHash = true; // already hashed
+    user.mustChangePassword = true;
+    await user.save();
+
+    // Send temp password email
+    await sendTempPasswordEmail(normalizedEmail, tempPassword);
+
+    return success(res, {
+      passwordCorrect: false
+    }, 'Temporary password sent to your email');
+  } catch (err) {
+    console.error('Verify current password error:', err);
+    return error(res, 'Password verification failed', 500);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// @desc    Forgot Password Step 2B — skip verification, send temp password
+// @route   POST /api/auth/forgot-password-send-temp
+// @access  Public
+// ---------------------------------------------------------------------------
+exports.sendTempPassword = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return error(res, 'Validation failed', 400, errors.array());
+    }
+
+    const { email } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
+    if (!user) {
+      return error(res, 'User not found', 404);
+    }
+
+    if (!user.isActive) {
+      return error(res, 'Account has been suspended. Contact admin.', 403);
+    }
+
+    // Generate temp password
+    const tempPassword = crypto.randomBytes(7).toString('hex').slice(0, 10);
+    const hashedTemp = await bcrypt.hash(tempPassword, 12);
+
+    user.password = hashedTemp;
+    user.$locals.skipHash = true; // already hashed
+    user.mustChangePassword = true;
+    await user.save();
+
+    // Send temp password email
+    await sendTempPasswordEmail(normalizedEmail, tempPassword);
+
+    return success(res, null, 'Temporary password sent to your email');
+  } catch (err) {
+    console.error('Send temp password error:', err);
+    return error(res, 'Failed to send temporary password', 500);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// @desc    Change password (after temp password login)
+// @route   PUT /api/auth/change-password
+// @access  Private (requires valid JWT)
+// ---------------------------------------------------------------------------
+exports.changePassword = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return error(res, 'Validation failed', 400, errors.array());
+    }
+
+    const { newPassword } = req.body;
+
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) {
+      return error(res, 'User not found', 404);
+    }
+
+    // Set new password — pre-save hook will hash it
+    user.password = newPassword;
+    user.mustChangePassword = false;
+    await user.save();
+
+    return success(res, {
+      role: user.role
+    }, 'Password changed successfully');
+  } catch (err) {
+    console.error('Change password error:', err);
+    return error(res, 'Password change failed', 500);
   }
 };

@@ -122,8 +122,8 @@ const PlacementReports = () => {
                 {[
                   { label: 'Total Students', value: report.totalStudents, color: 'bg-bauhaus-blue text-white' },
                   { label: 'Placed', value: report.totalPlaced, color: 'bg-bauhaus-yellow text-bauhaus-black' },
-                  { label: 'Avg Package', value: `${report.avgPackage?.toFixed(1) || 0} LPA`, color: 'bg-bauhaus-red text-white' },
-                  { label: 'Max Package', value: `${report.maxPackage || 0} LPA`, color: 'bg-bauhaus-black text-white' },
+                  { label: 'Avg Package', value: report.avgPackage && report.avgPackage > 0 ? `${report.avgPackage.toFixed(1)} LPA` : 'N/A', color: 'bg-bauhaus-red text-white' },
+                  { label: 'Max Package', value: report.maxPackage && report.maxPackage > 0 ? `${report.maxPackage.toFixed(1)} LPA` : 'N/A', color: 'bg-bauhaus-black text-white' },
                 ].map(s => (
                   <div key={s.label} className={`p-3 border-2 border-bauhaus-black ${s.color}`}>
                     <p className="text-xl font-black">{s.value}</p>

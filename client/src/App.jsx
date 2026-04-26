@@ -9,6 +9,7 @@ import Loader from './components/common/Loader';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import VerifyOTP from './components/auth/VerifyOTP';
+import ChangePassword from './components/auth/ChangePassword';
 
 // Student pages
 import StudentDashboard from './components/student/StudentDashboard';
@@ -76,6 +77,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/verify-otp" element={<VerifyOTP />} />
+            <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
 
             {/* Student */}
