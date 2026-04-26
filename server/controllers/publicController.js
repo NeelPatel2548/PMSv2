@@ -5,7 +5,7 @@ const Application = require('../models/Application');
 const SystemSettings = require('../models/SystemSettings');
 const { SKILLS_LIST } = require('../utils/constants');
 const { success, error } = require('../utils/apiResponse');
-const { sendEmail } = require('../services/emailService');
+const { sendEmail, buildContactAdminHtml, buildContactAutoReplyHtml } = require('../services/emailService');
 const { DEFAULT_LOGO_URL } = require('../models/SystemSettings');
 
 // @desc    Get public placement stats (for landing page)
@@ -120,34 +120,8 @@ exports.submitContactForm = async (req, res) => {
     const adminEmail = settings?.contactEmail || process.env.EMAIL_USER || 'admin@pms.com';
     const companyName = settings?.companyName || 'Placement Management System';
 
-    // Build HTML email to admin
-    const adminHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e0e0e0; border-radius: 8px;">
-        <h2 style="color: #333; border-bottom: 3px solid #1a56db; padding-bottom: 12px;">New Contact Form Submission</h2>
-        <table style="width:100%; border-collapse: collapse; margin-top: 16px;">
-          <tr>
-            <td style="padding:10px 12px; font-weight:bold; background:#f5f5f5; border: 1px solid #e0e0e0; width: 120px;">Name</td>
-            <td style="padding:10px 12px; border: 1px solid #e0e0e0;">${name}</td>
-          </tr>
-          <tr>
-            <td style="padding:10px 12px; font-weight:bold; background:#f5f5f5; border: 1px solid #e0e0e0;">Email</td>
-            <td style="padding:10px 12px; border: 1px solid #e0e0e0;"><a href="mailto:${email}">${email}</a></td>
-          </tr>
-          <tr>
-            <td style="padding:10px 12px; font-weight:bold; background:#f5f5f5; border: 1px solid #e0e0e0;">Subject</td>
-            <td style="padding:10px 12px; border: 1px solid #e0e0e0;">${subject}</td>
-          </tr>
-          <tr>
-            <td style="padding:10px 12px; font-weight:bold; background:#f5f5f5; border: 1px solid #e0e0e0; vertical-align:top;">Message</td>
-            <td style="padding:10px 12px; border: 1px solid #e0e0e0; white-space: pre-wrap;">${message}</td>
-          </tr>
-        </table>
-        <p style="color:#666; font-size:12px; margin-top:16px;">
-          This email was sent from the Contact Us form on ${companyName}. 
-          Reply directly to this email to respond to ${name}.
-        </p>
-      </div>
-    `;
+    // Build Bauhaus-styled HTML emails
+    const adminHtml = buildContactAdminHtml({ name, email, subject, message, companyName });
 
     // Send email to admin
     await sendEmail(
@@ -156,16 +130,8 @@ exports.submitContactForm = async (req, res) => {
       adminHtml
     );
 
-    // Send auto-reply to the user
-    const userHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e0e0e0; border-radius: 8px;">
-        <h2 style="color: #1a56db;">Thank you, ${name}!</h2>
-        <p>We have received your message and will get back to you as soon as possible.</p>
-        <p><strong>Your message:</strong></p>
-        <blockquote style="border-left: 3px solid #1a56db; padding-left: 12px; color: #555; white-space: pre-wrap;">${message}</blockquote>
-        <p style="margin-top: 20px;">Best regards,<br><strong>${companyName}</strong></p>
-      </div>
-    `;
+    // Build auto-reply HTML
+    const userHtml = buildContactAutoReplyHtml({ name, message, companyName });
 
     // Auto-reply (best effort — don't fail the request if this fails)
     try {

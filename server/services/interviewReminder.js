@@ -1,5 +1,7 @@
 const Interview = require('../models/Interview');
+const User = require('../models/User');
 const { createAndEmitNotification } = require('./notificationHelper');
+const { sendInterviewReminderEmail } = require('./emailService');
 
 // Track which interviews we've already reminded about (prevents duplicates across intervals)
 const remindedInterviews = new Set();
@@ -50,6 +52,25 @@ const checkUpcomingInterviews = async () => {
         type: 'interview_scheduled',
         link: '/student/interviews'
       });
+
+      // Send email reminder (best effort — don't fail the reminder loop)
+      try {
+        const studentUser = await User.findById(studentUserId).select('email');
+        if (studentUser?.email) {
+          await sendInterviewReminderEmail(studentUser.email, {
+            roundName: interview.roundName,
+            companyName: interview.company?.name || 'a company',
+            jobTitle: interview.job?.title || 'a position',
+            date: dateStr,
+            time: timeStr,
+            mode: interview.mode,
+            venue: interview.venue,
+            meetingLink: interview.meetingLink
+          });
+        }
+      } catch (emailErr) {
+        console.warn(`[InterviewReminder] Email send failed for interview ${reminderKey}:`, emailErr.message);
+      }
 
       remindedInterviews.add(reminderKey);
       remindersSent++;
